@@ -1,6 +1,12 @@
 [build]
 builder = "NIXPACKS"
 
+[build.nixpacks]
+nixPkgs = ["nodejs_20"]
+
+[build.nixpacks.env]
+NIXPACKS_NODE_VERSION = "20"
+
 [deploy]
 startCommand = "npm run start"
 healthcheckPath = "/api/health"
