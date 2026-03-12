@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd C:/Users/ed211/Documents/filezy-temp && cp -r . C:/Users/ed211/Documents/filezy/ 2>&1 | head -5 && echo \"Done copying\")",
+      "Bash(cd C:/Users/ed211/Documents/filezy && ls -la && rm -rf C:/Users/ed211/Documents/filezy-temp && rm -f README.md.bak && mv .claude.bak .claude 2>/dev/null; echo \"Cleanup done\")",
+      "Bash(cd C:/Users/ed211/Documents/filezy && rm -rf .claude.bak README.md.bak 2>/dev/null; echo \"done\")",
+      "Bash(cd C:/Users/ed211/Documents/filezy && npm install @prisma/client next-auth@5 @auth/prisma-adapter @aws-sdk/client-s3 @aws-sdk/s3-request-presigner stripe resend @react-email/components bcryptjs class-variance-authority clsx tailwind-merge lucide-react 2>&1)",
+      "Bash(cd C:/Users/ed211/Documents/filezy && npm install @prisma/client next-auth@beta @auth/prisma-adapter @aws-sdk/client-s3 @aws-sdk/s3-request-presigner stripe resend @react-email/components bcryptjs class-variance-authority clsx tailwind-merge lucide-react 2>&1)",
+      "Bash(cd C:/Users/ed211/Documents/filezy && npm install -D prisma @types/bcryptjs 2>&1)",
+      "Bash(cd C:/Users/ed211/Documents/filezy && npx shadcn@latest init -d --yes 2>&1)"
+    ]
+  }
+}

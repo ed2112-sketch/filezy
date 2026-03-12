@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  business   Business?
+  accountant Accountant?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Business {
+  id                     String      @id @default(cuid())
+  ownerId                String      @unique
+  owner                  User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                   String
+  accountantEmail        String?
+  accountantName         String?
+  state                  String?
+  plan                   Plan        @default(FREE)
+  stripeCustomerId       String?     @unique
+  stripeSubscriptionId   String?     @unique
+  referredByAccountantId String?
+  referredByAccountant   Accountant? @relation("ReferredBusinesses", fields: [referredByAccountantId], references: [id])
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  hires      Hire[]
+  commissions Commission[]
+  outreach   AccountantOutreach[]
+}
+
+model Hire {
+  id                      String     @id @default(cuid())
+  businessId              String
+  business                Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  employeeName            String
+  employeeEmail           String?
+  employeePhone           String?
+  position                String?
+  startDate               DateTime?
+  uploadToken             String     @unique @default(cuid())
+  tokenExpiresAt          DateTime   @default(dbgenerated("NOW() + INTERVAL '30 days'"))
+  status                  HireStatus @default(PENDING)
+  completionPct           Int        @default(0)
+  accountantNotifiedAt    DateTime?
+  ownerNotifiedCompleteAt DateTime?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+
+  documents Document[]
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  hireId        String
+  hire          Hire     @relation(fields: [hireId], references: [id], onDelete: Cascade)
+  docType       String
+  filePath      String
+  fileName      String
+  fileSize      Int?
+  mimeType      String?
+  uploadedAt    DateTime @default(now())
+  reviewed      Boolean  @default(false)
+  reviewerNotes String?
+}
+
+model Accountant {
+  id                     String    @id @default(cuid())
+  userId                 String?   @unique
+  user                   User?     @relation(fields: [userId], references: [id])
+  email                  String    @unique
+  name                   String?
+  firmName               String?
+  stripeConnectAccountId String?
+  commissionTier         Int       @default(1)
+  activeReferralCount    Int       @default(0)
+  totalEarnedCents       Int       @default(0)
+  joinedAt               DateTime?
+  createdAt              DateTime  @default(now())
+
+  referralLink       ReferralLink?
+  referredBusinesses Business[]           @relation("ReferredBusinesses")
+  commissions        Commission[]
+  outreachReceived   AccountantOutreach[]
+}
+
+model ReferralLink {
+  id           String     @id @default(cuid())
+  accountantId String     @unique
+  accountant   Accountant @relation(fields: [accountantId], references: [id], onDelete: Cascade)
+  slug         String     @unique
+  clicks       Int        @default(0)
+  conversions  Int        @default(0)
+  createdAt    DateTime   @default(now())
+}
+
+model AccountantOutreach {
+  id                    String         @id @default(cuid())
+  email                 String         @unique
+  accountantId          String?
+  accountant            Accountant?    @relation(fields: [accountantId], references: [id])
+  triggeredByBusinessId String?
+  triggeredBy           Business?      @relation(fields: [triggeredByBusinessId], references: [id])
+  emailsSent            Int            @default(0)
+  status                OutreachStatus @default(QUEUED)
+  nextEmailAt           DateTime       @default(now())
+  convertedAt           DateTime?
+  optedOutAt            DateTime?
+  createdAt             DateTime       @default(now())
+}
+
+model Commission {
+  id                    String           @id @default(cuid())
+  accountantId          String
+  accountant            Accountant       @relation(fields: [accountantId], references: [id])
+  businessId            String
+  business              Business         @relation(fields: [businessId], references: [id])
+  stripeInvoiceId       String           @unique
+  grossAmountCents      Int
+  commissionAmountCents Int
+  commissionPct         Float
+  status                CommissionStatus @default(PENDING)
+  periodStart           DateTime?
+  periodEnd             DateTime?
+  paidAt                DateTime?
+  createdAt             DateTime         @default(now())
+}
+
+enum Plan {
+  FREE
+  STARTER
+  GROWTH
+}
+
+enum HireStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETE
+  EXPIRED
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum OutreachStatus {
+  QUEUED
+  IN_PROGRESS
+  CONVERTED
+  EXHAUSTED
+  OPTED_OUT
+}
