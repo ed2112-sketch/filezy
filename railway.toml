@@ -2,10 +2,10 @@
 builder = "NIXPACKS"
 
 [build.nixpacks]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_22"]
 
 [build.nixpacks.env]
-NIXPACKS_NODE_VERSION = "20"
+NIXPACKS_NODE_VERSION = "22"
 
 [deploy]
 startCommand = "npm run start"
