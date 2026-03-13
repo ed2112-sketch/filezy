@@ -6,6 +6,8 @@ import {
   FileText,
   LayoutDashboard,
   Users,
+  BarChart3,
+  ScrollText,
   Settings,
   LogOut,
   ChevronDown,
@@ -41,6 +43,8 @@ export function DashboardShell({
   const allNavLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/hires", label: hiresLabel, icon: Users },
+    { href: "/reports", label: "Reports", icon: BarChart3, ownerAdminOnly: true },
+    { href: "/audit", label: "Audit Log", icon: ScrollText, ownerAdminOnly: true },
     { href: "/settings", label: "Settings", icon: Settings, ownerAdminOnly: true },
   ]
 
