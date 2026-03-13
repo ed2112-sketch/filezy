@@ -112,8 +112,13 @@ function Hero() {
           <h1 className="text-[3.25rem] md:text-[4.25rem] font-bold leading-[1.05] tracking-tight mb-6">
             Stop Chasing{" "}
             <span className="relative inline-block">
-              <span className="relative z-10">Onboarding Paperwork</span>
-              <span className="absolute -bottom-[3px] -left-2 -right-2 h-4 bg-[#36c973]/20 -z-0 rounded-sm" />
+              <span className="relative z-10">Onboarding{" "}
+                <span className="relative inline-block">
+                  Paperwork
+                  <span className="absolute -bottom-[3px] -left-2 -right-2 h-4 bg-[#36c973]/20 -z-0 rounded-sm md:hidden" />
+                </span>
+              </span>
+              <span className="absolute -bottom-[3px] -left-2 -right-2 h-4 bg-[#36c973]/20 -z-0 rounded-sm hidden md:block" />
             </span>
           </h1>
 
