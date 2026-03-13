@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -53,11 +54,8 @@ export function AccountantShell({
           {/* Left: Logo + nav */}
           <div className="flex items-center gap-8">
             <Link href="/portal" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-[#136334] flex items-center justify-center">
-                <FileText className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-bold text-lg tracking-tight">Filezy</span>
-              <span className="text-xs text-muted-foreground font-medium bg-[#136334]/10 text-[#136334] px-2 py-0.5 rounded-full">
+              <Image src="/logo.png" alt="Filezy" width={120} height={32} className="h-8 w-auto" priority />
+              <span className="text-xs font-medium bg-[#136334]/10 text-[#136334] px-2 py-0.5 rounded-full">
                 Partner
               </span>
             </Link>

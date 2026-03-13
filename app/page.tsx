@@ -28,6 +28,7 @@ import {
   LayoutDashboard,
   Layers,
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 
 export default function LandingPage() {
@@ -56,12 +57,7 @@ function Nav() {
     <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-[#e5e7eb]/60">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-[#136334] flex items-center justify-center">
-            <FileText className="h-[18px] w-[18px] text-white" />
-          </div>
-          <span className="font-bold text-[1.15rem] tracking-tight">
-            Filezy
-          </span>
+          <Image src="/logo.png" alt="Filezy" width={140} height={36} className="h-9 w-auto" priority />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-[0.9rem] text-[#59626d]">
@@ -959,10 +955,7 @@ function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="h-9 w-9 rounded-xl bg-[#136334] flex items-center justify-center">
-                <FileText className="h-[18px] w-[18px] text-white" />
-              </div>
-              <span className="font-bold text-[1.15rem] tracking-tight">Filezy</span>
+              <Image src="/logo.png" alt="Filezy" width={140} height={36} className="h-9 w-auto" />
             </div>
             <p className="text-[0.85rem] text-[#59626d] leading-relaxed">
               Document onboarding, simplified.

@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -67,10 +68,7 @@ export function DashboardShell({
           {/* Left: Logo + nav */}
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-[#136334] flex items-center justify-center">
-                <FileText className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-bold text-lg tracking-tight">Filezy</span>
+              <Image src="/logo.png" alt="Filezy" width={120} height={32} className="h-8 w-auto" priority />
             </Link>
 
             <nav className="hidden sm:flex items-center gap-1">

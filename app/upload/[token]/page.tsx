@@ -377,14 +377,11 @@ function Shell({
               className="h-10 max-w-[200px] object-contain"
             />
           ) : (
-            <>
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <FileText className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <span className="font-bold text-lg text-foreground tracking-tight">
-                Filezy
-              </span>
-            </>
+            <img
+              src="/logo.png"
+              alt="Filezy"
+              className="h-10 max-w-[200px] object-contain"
+            />
           )}
         </div>
       </header>
