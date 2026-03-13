@@ -2,10 +2,11 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { Users, Clock, CheckCircle2, Plus, FileText } from "lucide-react"
+import { Users, Clock, CheckCircle2, Plus, FileText, AlertTriangle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { DOCUMENT_TYPES } from "@/lib/documents"
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive"; className: string }> = {
   PENDING: { label: "Pending", variant: "secondary", className: "bg-gray-100 text-gray-700 hover:bg-gray-100" },
@@ -25,8 +26,9 @@ export default async function DashboardPage() {
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
 
-  const [totalHires, pendingHires, completedThisMonth, recentHires] =
+  const [totalHires, pendingHires, completedThisMonth, recentHires, expiringSoon] =
     await Promise.all([
       db.hire.count({ where: { businessId: business.id } }),
       db.hire.count({
@@ -46,6 +48,19 @@ export default async function DashboardPage() {
         where: { businessId: business.id },
         orderBy: { createdAt: "desc" },
         take: 5,
+      }),
+      db.documentExpiration.findMany({
+        where: {
+          isResolved: false,
+          expiresAt: { gte: now, lte: in30Days },
+          document: { hire: { businessId: business.id } },
+        },
+        include: {
+          document: {
+            include: { hire: true },
+          },
+        },
+        orderBy: { expiresAt: "asc" },
       }),
     ])
 
@@ -111,6 +126,67 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Expiring Soon */}
+      {expiringSoon.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <h2 className="text-lg font-semibold">Expiring Soon</h2>
+          </div>
+          <Card className="rounded-2xl border-0 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-amber-50/60">
+                    <th className="text-left font-medium text-muted-foreground px-6 py-3">
+                      Document
+                    </th>
+                    <th className="text-left font-medium text-muted-foreground px-6 py-3">
+                      Employee
+                    </th>
+                    <th className="text-left font-medium text-muted-foreground px-6 py-3">
+                      Expires
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expiringSoon.map((exp) => {
+                    const docTypeKey = exp.document.docType as keyof typeof DOCUMENT_TYPES
+                    const docLabel = DOCUMENT_TYPES[docTypeKey]?.label ?? exp.document.docType
+                    const daysUntil = Math.ceil(
+                      (exp.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+                    )
+                    const isUrgent = daysUntil <= 7
+                    return (
+                      <tr
+                        key={exp.id}
+                        className="border-b last:border-0 hover:bg-muted/20 transition-colors"
+                      >
+                        <td className="px-6 py-4 font-medium">{docLabel}</td>
+                        <td className="px-6 py-4 text-muted-foreground">
+                          {exp.document.hire.employeeName}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                              isUrgent
+                                ? "bg-red-100 text-red-700"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {daysUntil === 1 ? "1 day" : `${daysUntil} days`}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Recent hires */}
       <div>
