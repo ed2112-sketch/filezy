@@ -18,14 +18,14 @@ const PLANS = [
   {
     key: "STARTER",
     name: "Starter",
-    price: "$0",
-    period: "/mo",
-    description: "Pay only for what you use",
+    price: "$3",
+    period: "/onboarding",
+    description: "Pay as you go — no monthly fee",
     features: [
-      "0 included onboardings",
-      "$3.00 per onboarding",
       "All features included",
-      "Email support",
+      "$3 per completed onboarding",
+      "No monthly commitment",
+      "Unlimited team members",
     ],
     priceId: null,
     icon: CreditCard,
@@ -35,12 +35,12 @@ const PLANS = [
     name: "Growth",
     price: "$49",
     period: "/mo",
-    description: "For growing businesses",
+    description: "25 onboardings included",
     features: [
-      "25 included onboardings/mo",
-      "$2.00 per extra onboarding",
       "All features included",
-      "Priority support",
+      "25 onboardings/mo included",
+      "$2 per additional onboarding",
+      "Unlimited team members",
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_GROWTH_PRICE_ID!,
     icon: Zap,
@@ -51,17 +51,28 @@ const PLANS = [
     name: "Pro",
     price: "$99",
     period: "/mo",
-    description: "For high-volume teams",
+    description: "75 onboardings included",
     features: [
-      "75 included onboardings/mo",
-      "$1.50 per extra onboarding",
       "All features included",
+      "75 onboardings/mo included",
+      "$1.50 per additional onboarding",
+      "Unlimited team members",
       "Priority support",
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!,
     icon: Rocket,
   },
 ]
+
+interface UsageData {
+  plan: string
+  periodStart: string
+  periodEnd: string
+  usageCount: number
+  included: number
+  overageCount: number
+  overageCents: number
+}
 
 export default function BillingPage() {
   const searchParams = useSearchParams()
@@ -73,6 +84,7 @@ export default function BillingPage() {
     type: "success" | "error"
     text: string
   } | null>(null)
+  const [usage, setUsage] = useState<UsageData | null>(null)
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
@@ -89,11 +101,19 @@ export default function BillingPage() {
   useEffect(() => {
     async function fetchBilling() {
       try {
-        const res = await fetch("/api/business/settings")
-        if (!res.ok) return
-        const data = await res.json()
-        setCurrentPlan(data.plan ?? "STARTER")
-        setHasSubscription(data.plan !== "STARTER")
+        const [settingsRes, usageRes] = await Promise.all([
+          fetch("/api/business/settings"),
+          fetch("/api/business/usage"),
+        ])
+        if (settingsRes.ok) {
+          const data = await settingsRes.json()
+          setCurrentPlan(data.plan ?? "STARTER")
+          setHasSubscription(data.plan !== "STARTER")
+        }
+        if (usageRes.ok) {
+          const usageData = await usageRes.json()
+          setUsage(usageData)
+        }
       } catch {
         // silent
       } finally {
@@ -222,12 +242,49 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
+      {/* Usage This Period */}
+      {usage && (
+        <Card className="rounded-2xl border-0 shadow-sm">
+          <CardContent className="p-6">
+            <h2 className="font-semibold mb-4">Usage This Period</h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Onboardings</span>
+                <span className="font-medium">
+                  {currentPlan === "STARTER"
+                    ? `${usage.usageCount} completed (pay-as-you-go)`
+                    : `${usage.usageCount} / ${usage.included} included`}
+                </span>
+              </div>
+              {usage.overageCount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Overage charges</span>
+                  <span className="font-medium text-amber-600">
+                    ${(usage.overageCents / 100).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t">
+                <span>
+                  Period: {new Date(usage.periodStart).toLocaleDateString()} –{" "}
+                  {new Date(usage.periodEnd).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Plan comparison cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {PLANS.map((plan) => {
           const isCurrent = plan.key === currentPlan
+          // GROWTH <-> PRO switches go through billing portal
+          const isPortalSwitch =
+            (currentPlan === "PRO" && plan.key === "GROWTH") ||
+            (currentPlan === "GROWTH" && plan.key === "PRO")
           const isDowngrade =
-            (currentPlan === "PRO" && plan.key !== "PRO") ||
+            (currentPlan === "PRO" && plan.key === "STARTER") ||
             (currentPlan === "GROWTH" && plan.key === "STARTER")
 
           return (
@@ -293,6 +350,21 @@ export default function BillingPage() {
                     variant="ghost"
                   >
                     Current Plan
+                  </Button>
+                ) : isPortalSwitch ? (
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl"
+                    onClick={handleManageBilling}
+                    disabled={actionLoading === "portal"}
+                  >
+                    {actionLoading === "portal" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : currentPlan === "GROWTH" ? (
+                      "Upgrade"
+                    ) : (
+                      "Downgrade"
+                    )}
                   </Button>
                 ) : isDowngrade ? (
                   hasSubscription ? (
