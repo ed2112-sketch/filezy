@@ -131,7 +131,7 @@ function Hero() {
           </div>
 
           <p className="mt-6 text-[0.8rem] text-[#59626d]">
-            No credit card required &middot; First hire free &middot; Setup in 2 minutes
+            No credit card required &middot; No monthly fee required &middot; Setup in 2 minutes
           </p>
         </div>
 
@@ -797,7 +797,7 @@ function FAQ() {
     },
     {
       q: "What documents does Filezy collect?",
-      a: "W-4 (federal tax form), I-9 (identity verification), direct deposit information, and the signed offer letter. On the Business plan, you get API access and custom branding.",
+      a: "W-4 (federal tax form), I-9 (identity verification), direct deposit information, and the signed offer letter. All plans include all features — no features are locked behind higher tiers.",
     },
     {
       q: "Is it secure?",
@@ -809,7 +809,7 @@ function FAQ() {
     },
     {
       q: "Can I try it before paying?",
-      a: "Yes — the Free plan lets you collect documents for 1 hire per year at no cost. No credit card required to sign up.",
+      a: "Yes — the Starter plan lets you pay only $3 per completed onboarding — no monthly fee, no commitment. No credit card required to sign up.",
     },
     {
       q: "How does the accountant partner program work?",
@@ -863,7 +863,7 @@ function FinalCTA() {
               <span className="text-[#136334]">Start with Filezy today.</span>
             </h2>
             <p className="text-[1.15rem] text-[#59626d] max-w-xl mx-auto mb-10">
-              Your first hire is free. Set up your account in 2 minutes and send your first upload link today.
+              Start collecting documents today. Set up your account in 2 minutes and send your first upload link.
             </p>
             <Link
               href="/signup"

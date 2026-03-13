@@ -3,6 +3,40 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getResend } from "@/lib/resend"
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function parseCSVLine(line: string): string[] {
+  const fields: string[] = []
+  let current = ""
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"'
+        i++
+      } else if (ch === '"') {
+        inQuotes = false
+      } else {
+        current += ch
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true
+      } else if (ch === ',') {
+        fields.push(current.trim())
+        current = ""
+      } else {
+        current += ch
+      }
+    }
+  }
+  fields.push(current.trim())
+  return fields
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth()
   if (!session?.user?.id) {
@@ -38,7 +72,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Parse header
-  const header = lines[0].toLowerCase().split(",").map(h => h.trim())
+  const header = parseCSVLine(lines[0].toLowerCase()).map(h => h.trim())
   const nameIdx = header.indexOf("name")
   const emailIdx = header.indexOf("email")
   const phoneIdx = header.indexOf("phone")
@@ -64,8 +98,7 @@ export async function POST(req: NextRequest) {
   )
 
   for (let i = 1; i < lines.length; i++) {
-    // Simple CSV parsing (handles basic cases)
-    const cols = lines[i].split(",").map(c => c.trim())
+    const cols = parseCSVLine(lines[i])
     const name = cols[nameIdx]
     const email = cols[emailIdx]?.toLowerCase()
     const phone = phoneIdx >= 0 ? cols[phoneIdx] : undefined
@@ -109,7 +142,7 @@ export async function POST(req: NextRequest) {
         from: `${business.name} via Filezy <noreply@filezy.com>`,
         to: email,
         subject: `${business.name} — Document upload request`,
-        html: `<div style="margin-bottom: 16px;">${logoHtml}</div><p>Hi ${name},</p><p>${business.name} has requested documents from you. Please use the link below to upload them.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}">Upload your documents</a></p><p>If you have questions, contact ${business.name} directly.</p>`,
+        html: `<div style="margin-bottom: 16px;">${logoHtml}</div><p>Hi ${escapeHtml(name)},</p><p>${escapeHtml(business.name)} has requested documents from you. Please use the link below to upload them.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}">Upload your documents</a></p><p>If you have questions, contact ${escapeHtml(business.name)} directly.</p>`,
       }).catch(err => console.error("Bulk invite email failed for", email, err))
     } catch {
       results.failed.push({ row: i + 1, reason: "Failed to create record" })

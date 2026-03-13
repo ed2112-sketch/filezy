@@ -81,7 +81,7 @@ export default async function HiresPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{labels.hires}</h1>
           <p className="text-muted-foreground mt-1">
-            Manage new hire paperwork for {business.name}
+            Manage {labels.onboarding.toLowerCase()} for {business.name}
           </p>
         </div>
         <Link href="/hires/new">
@@ -100,7 +100,7 @@ export default async function HiresPage() {
             </div>
             <h3 className="text-lg font-semibold mb-2">No {labels.hires.toLowerCase()} yet</h3>
             <p className="text-muted-foreground mb-6 max-w-sm">
-              Add your first new hire to start collecting their documents
+              Add your first {labels.hire.toLowerCase()} to start collecting their documents
               automatically.
             </p>
             <Link href="/hires/new">

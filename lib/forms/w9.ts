@@ -96,7 +96,7 @@ export const w9Form: FormDefinition = {
     {
       name: "tin",
       label: "Taxpayer Identification Number",
-      type: "text",
+      type: "ssn",
       required: true,
       validation: {
         pattern: "^\\d{9}$",

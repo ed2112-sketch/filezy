@@ -77,6 +77,21 @@ export const backgroundCheckForm: FormDefinition = {
       required: true,
       section: "personal",
     },
+    {
+      name: "previousAddresses",
+      label: "Previous Addresses (last 7 years)",
+      type: "text",
+      required: false,
+      placeholder: "List previous addresses separated by semicolons",
+      section: "personal",
+    },
+    {
+      name: "consentAcknowledgment",
+      label: "I authorize a background investigation and release all parties from liability",
+      type: "checkbox",
+      required: true,
+      section: "authorization",
+    },
   ],
   requiresSignature: true,
 }
