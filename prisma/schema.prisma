@@ -14,13 +14,18 @@ model User {
   name          String?
   image         String?
   passwordHash  String?
+  role          UserRole  @default(OWNER)
+  businessId    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts   Account[]
-  sessions   Session[]
-  business   Business?
-  accountant Accountant?
+  accounts          Account[]
+  sessions          Session[]
+  ownedBusiness     Business?         @relation("BusinessOwner")
+  business          Business?         @relation("BusinessMembers", fields: [businessId], references: [id])
+  accountant        Accountant?
+  userLocations     UserLocation[]
+  uploadedVersions  DocumentVersion[] @relation("AdminUploads")
 }
 
 model Account {
@@ -58,24 +63,38 @@ model VerificationToken {
 }
 
 model Business {
-  id                     String      @id @default(cuid())
-  ownerId                String      @unique
-  owner                  User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name                   String
-  accountantEmail        String?
-  accountantName         String?
-  state                  String?
-  plan                   Plan        @default(FREE)
-  stripeCustomerId       String?     @unique
-  stripeSubscriptionId   String?     @unique
-  referredByAccountantId String?
-  referredByAccountant   Accountant? @relation("ReferredBusinesses", fields: [referredByAccountantId], references: [id])
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  id                       String      @id @default(cuid())
+  ownerId                  String      @unique
+  owner                    User        @relation("BusinessOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name                     String
+  accountantEmail          String?
+  accountantName           String?
+  state                    String?
+  plan                     Plan        @default(FREE)
+  stripeCustomerId         String?     @unique
+  stripeSubscriptionId     String?     @unique
+  referredByAccountantId   String?
+  referredByAccountant     Accountant? @relation("ReferredBusinesses", fields: [referredByAccountantId], references: [id])
+  selfOnboardingEnabled    Boolean     @default(false)
+  selfOnboardingSlug       String?     @unique
+  defaultRoleTemplateId    String?
+  reminderDay1             Int         @default(3)
+  reminderDay2             Int         @default(7)
+  reminderDay3             Int         @default(14)
+  smsEnabled               Boolean     @default(false)
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
 
-  hires      Hire[]
-  commissions Commission[]
-  outreach   AccountantOutreach[]
+  hires             Hire[]
+  commissions       Commission[]
+  outreach          AccountantOutreach[]
+  members           User[]                    @relation("BusinessMembers")
+  locations         Location[]
+  checklists        OnboardingChecklist[]
+  customContent     CustomContent[]
+  roleTemplates     RoleTemplate[]
+  auditLogs         AuditLog[]
+  accountantAccess  AccountantBusinessAccess[]
 }
 
 model Hire {
@@ -93,24 +112,42 @@ model Hire {
   completionPct           Int        @default(0)
   accountantNotifiedAt    DateTime?
   ownerNotifiedCompleteAt DateTime?
+  employeeId              String?
+  locationId              String?
+  roleTemplateId          String?
+  checklistId             String?
+  selfOnboarded           Boolean    @default(false)
+  reminder1SentAt         DateTime?
+  reminder2SentAt         DateTime?
+  reminder3SentAt         DateTime?
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
 
-  documents Document[]
+  documents      Document[]
+  employee       Employee?           @relation(fields: [employeeId], references: [id])
+  location       Location?           @relation(fields: [locationId], references: [id])
+  roleTemplate   RoleTemplate?       @relation(fields: [roleTemplateId], references: [id])
+  checklist      OnboardingChecklist? @relation(fields: [checklistId], references: [id])
+  checklistItems HireChecklistItem[]
+  customContent  HireCustomContent[]
+
+  @@index([locationId])
+  @@index([employeeId])
 }
 
 model Document {
-  id            String   @id @default(cuid())
-  hireId        String
-  hire          Hire     @relation(fields: [hireId], references: [id], onDelete: Cascade)
-  docType       String
-  filePath      String
-  fileName      String
-  fileSize      Int?
-  mimeType      String?
-  uploadedAt    DateTime @default(now())
-  reviewed      Boolean  @default(false)
-  reviewerNotes String?
+  id               String  @id @default(cuid())
+  hireId           String
+  hire             Hire    @relation(fields: [hireId], references: [id], onDelete: Cascade)
+  docType          String
+  currentVersionId String? @unique
+  signedAt         DateTime?
+  signatureData    Json?
+  createdAt        DateTime @default(now())
+
+  currentVersion DocumentVersion?    @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions       DocumentVersion[]
+  expiration     DocumentExpiration?
 }
 
 model Accountant {
@@ -131,6 +168,7 @@ model Accountant {
   referredBusinesses Business[]           @relation("ReferredBusinesses")
   commissions        Commission[]
   outreachReceived   AccountantOutreach[]
+  businessAccess     AccountantBusinessAccess[]
 }
 
 model ReferralLink {
@@ -175,10 +213,237 @@ model Commission {
   createdAt             DateTime         @default(now())
 }
 
+model Employee {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String?
+  phone               String?
+  magicLinkToken      String?   @unique
+  magicLinkExpiresAt  DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  sessions         EmployeeSession[]
+  hires            Hire[]
+  uploadedVersions DocumentVersion[] @relation("EmployeeUploads")
+}
+
+model EmployeeSession {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([token])
+}
+
+model Location {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  address    String?
+  city       String?
+  state      String?
+  zip        String?
+  phone      String?
+  stateEIN   String?
+  isDefault  Boolean  @default(false)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  hires         Hire[]
+  userLocations UserLocation[]
+  roleTemplates RoleTemplate[]
+  customContent CustomContent[]
+}
+
+model UserLocation {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@index([userId])
+  @@index([locationId])
+}
+
+model DocumentVersion {
+  id                    String                @id @default(cuid())
+  documentId            String
+  document              Document              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version               Int
+  filePath              String
+  fileName              String
+  fileSize              Int?
+  mimeType              String?
+  uploaderType          UploaderType
+  uploadedByEmployeeId  String?
+  uploadedByEmployee    Employee?             @relation("EmployeeUploads", fields: [uploadedByEmployeeId], references: [id])
+  uploadedByUserId      String?
+  uploadedByUser        User?                 @relation("AdminUploads", fields: [uploadedByUserId], references: [id])
+  status                DocumentVersionStatus @default(CURRENT)
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  reviewerNotes         String?
+  uploadedAt            DateTime              @default(now())
+
+  currentForDocument Document? @relation("CurrentVersion")
+}
+
+model OnboardingChecklist {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  items         ChecklistItem[]
+  roleTemplates RoleTemplate[]
+  hires         Hire[]
+}
+
+model ChecklistItem {
+  id           String              @id @default(cuid())
+  checklistId  String
+  checklist    OnboardingChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  label        String
+  description  String?
+  sortOrder    Int                 @default(0)
+  requiresFile Boolean             @default(false)
+
+  hireChecklistItems HireChecklistItem[]
+}
+
+model HireChecklistItem {
+  id              String        @id @default(cuid())
+  hireId          String
+  hire            Hire          @relation(fields: [hireId], references: [id], onDelete: Cascade)
+  checklistItemId String
+  checklistItem   ChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  completedAt     DateTime?
+  completedBy     String?
+  fileDocumentId  String?
+
+  @@unique([hireId, checklistItemId])
+}
+
+model CustomContent {
+  id                     String      @id @default(cuid())
+  businessId             String
+  business               Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId             String?
+  location               Location?   @relation(fields: [locationId], references: [id])
+  name                   String
+  description            String?
+  contentType            ContentType
+  fileUrl                String?
+  externalUrl            String?
+  requiresSignature      Boolean     @default(false)
+  requiresAcknowledgment Boolean     @default(false)
+  sortOrder              Int         @default(0)
+  isActive               Boolean     @default(true)
+  createdAt              DateTime    @default(now())
+
+  hireCustomContent        HireCustomContent[]
+  roleTemplateCustomContent RoleTemplateCustomContent[]
+}
+
+model HireCustomContent {
+  id              String                 @id @default(cuid())
+  hireId          String
+  hire            Hire                   @relation(fields: [hireId], references: [id], onDelete: Cascade)
+  customContentId String
+  customContent   CustomContent          @relation(fields: [customContentId], references: [id], onDelete: Cascade)
+  viewedAt        DateTime?
+  acknowledgedAt  DateTime?
+  signedAt        DateTime?
+  signatureData   Json?
+  status          HireCustomContentStatus @default(PENDING)
+
+  @@unique([hireId, customContentId])
+}
+
+model RoleTemplate {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id])
+  name        String
+  docTypes    Json     @default("[]")
+  checklistId String?
+  checklist   OnboardingChecklist? @relation(fields: [checklistId], references: [id])
+  createdAt   DateTime @default(now())
+
+  roleTemplateCustomContent RoleTemplateCustomContent[]
+  hires                     Hire[]
+}
+
+model RoleTemplateCustomContent {
+  id               String        @id @default(cuid())
+  roleTemplateId   String
+  roleTemplate     RoleTemplate  @relation(fields: [roleTemplateId], references: [id], onDelete: Cascade)
+  customContentId  String
+  customContent    CustomContent @relation(fields: [customContentId], references: [id], onDelete: Cascade)
+
+  @@unique([roleTemplateId, customContentId])
+}
+
+model DocumentExpiration {
+  id                String    @id @default(cuid())
+  documentId        String    @unique
+  document          Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  expiresAt         DateTime
+  reminder30SentAt  DateTime?
+  reminder7SentAt   DateTime?
+  expirationSentAt  DateTime?
+  isResolved        Boolean   @default(false)
+
+  @@index([expiresAt, isResolved])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  hireId     String?
+  documentId String?
+  action     AuditAction
+  actorType  ActorType
+  actorId    String?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([hireId])
+}
+
+model AccountantBusinessAccess {
+  id           String                 @id @default(cuid())
+  accountantId String
+  accountant   Accountant             @relation(fields: [accountantId], references: [id], onDelete: Cascade)
+  businessId   String
+  business     Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  accessLevel  AccountantAccessLevel  @default(DOCUMENTS_ONLY)
+  createdAt    DateTime               @default(now())
+
+  @@unique([accountantId, businessId])
+}
+
 enum Plan {
   FREE
   STARTER
-  GROWTH
+  PRO
+  BUSINESS
 }
 
 enum HireStatus {
@@ -200,4 +465,66 @@ enum OutreachStatus {
   CONVERTED
   EXHAUSTED
   OPTED_OUT
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+enum DocumentVersionStatus {
+  CURRENT
+  PENDING_REVIEW
+  ARCHIVED
+  REJECTED
+}
+
+enum UploaderType {
+  EMPLOYEE
+  ADMIN
+}
+
+enum ActorType {
+  EMPLOYEE
+  ADMIN
+  SYSTEM
+}
+
+enum AuditAction {
+  UPLOADED
+  SIGNED
+  APPROVED
+  REJECTED
+  REPLACED
+  DOWNLOADED
+  VIEWED
+  CHECKLIST_COMPLETED
+  LOGIN
+  REMINDER_SENT
+  REPORT_GENERATED
+  HIRE_CREATED
+  HIRE_APPROVED
+  CONTENT_VIEWED
+  CONTENT_SIGNED
+}
+
+enum ContentType {
+  DOCUMENT
+  VIDEO
+  LINK
+  CUSTOM_FORM
+}
+
+enum HireCustomContentStatus {
+  PENDING
+  VIEWED
+  ACKNOWLEDGED
+  SIGNED
+}
+
+enum AccountantAccessLevel {
+  DOCUMENTS_ONLY
+  FULL
+  DOCUMENTS_AND_COMPLIANCE
 }

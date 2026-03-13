@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
             referredByAccountant: true,
           },
         },
-        documents: true,
+        documents: {
+            include: { currentVersion: { select: { fileName: true, filePath: true } } },
+          },
       },
     })
 
@@ -62,12 +64,14 @@ export async function POST(req: NextRequest) {
 
     // Generate signed download URLs for each document (24hr expiry)
     const documentLinks = await Promise.all(
-      hire.documents.map(async (doc) => ({
-        id: doc.id,
-        docType: doc.docType,
-        fileName: doc.fileName,
-        downloadUrl: await getSignedDownloadUrl(doc.filePath, TWENTY_FOUR_HOURS),
-      }))
+      hire.documents
+        .filter((doc) => doc.currentVersion?.filePath)
+        .map(async (doc) => ({
+          id: doc.id,
+          docType: doc.docType,
+          fileName: doc.currentVersion?.fileName ?? null,
+          downloadUrl: await getSignedDownloadUrl(doc.currentVersion!.filePath, TWENTY_FOUR_HOURS),
+        }))
     )
 
     // Update hire to mark accountant as notified

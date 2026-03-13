@@ -22,6 +22,7 @@ export async function GET(
           business: { select: { ownerId: true } },
         },
       },
+      currentVersion: { select: { filePath: true } },
     },
   })
 
@@ -34,7 +35,11 @@ export async function GET(
     return Response.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const url = await getSignedDownloadUrl(document.filePath, 3600)
+  if (!document.currentVersion?.filePath) {
+    return Response.json({ error: "No file available" }, { status: 404 })
+  }
+
+  const url = await getSignedDownloadUrl(document.currentVersion.filePath, 3600)
 
   return Response.json({ url })
 }

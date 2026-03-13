@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { db } from "@/lib/db"
 import { uploadFile, buildFilePath } from "@/lib/storage"
 import { calculateCompletionPct } from "@/lib/documents"
+import { UploaderType, DocumentVersionStatus } from "@/lib/generated/prisma/client"
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 const ALLOWED_TYPES = [
@@ -21,7 +22,13 @@ export async function GET(
     where: { uploadToken: token },
     include: {
       business: { select: { name: true } },
-      documents: { select: { docType: true, fileName: true, uploadedAt: true } },
+      documents: {
+        select: {
+          docType: true,
+          currentVersionId: true,
+          currentVersion: { select: { fileName: true, uploadedAt: true } },
+        },
+      },
     },
   })
 
@@ -47,8 +54,8 @@ export async function GET(
     completionPct: hire.completionPct,
     documents: hire.documents.map((d) => ({
       docType: d.docType,
-      fileName: d.fileName,
-      uploadedAt: d.uploadedAt,
+      fileName: d.currentVersion?.fileName ?? null,
+      uploadedAt: d.currentVersion?.uploadedAt ?? null,
     })),
   })
 }
@@ -115,23 +122,75 @@ export async function POST(
 
   await uploadFile(filePath, buffer, file.type)
 
-  await db.document.create({
+  // 1. Find or create the Document container for this hireId + docType
+  let document = await db.document.findFirst({
+    where: { hireId: hire.id, docType },
+    include: {
+      versions: {
+        where: { status: DocumentVersionStatus.CURRENT },
+        select: { id: true },
+      },
+    },
+  })
+
+  if (!document) {
+    document = await db.document.create({
+      data: { hireId: hire.id, docType },
+      include: {
+        versions: {
+          where: { status: DocumentVersionStatus.CURRENT },
+          select: { id: true },
+        },
+      },
+    })
+  }
+
+  // 2. Find the latest version number for this document
+  const latestVersion = await db.documentVersion.findFirst({
+    where: { documentId: document.id },
+    orderBy: { version: "desc" },
+    select: { version: true },
+  })
+
+  const nextVersionNumber = (latestVersion?.version ?? 0) + 1
+
+  // 3. Create new DocumentVersion with status CURRENT
+  const newVersion = await db.documentVersion.create({
     data: {
-      hireId: hire.id,
-      docType,
+      documentId: document.id,
+      version: nextVersionNumber,
       filePath,
       fileName: file.name,
       fileSize: file.size,
       mimeType: file.type,
+      uploaderType: UploaderType.EMPLOYEE,
+      status: DocumentVersionStatus.CURRENT,
     },
+  })
+
+  // 4. Archive any previous CURRENT versions
+  const previousCurrentIds = document.versions.map((v) => v.id)
+  if (previousCurrentIds.length > 0) {
+    await db.documentVersion.updateMany({
+      where: { id: { in: previousCurrentIds } },
+      data: { status: DocumentVersionStatus.ARCHIVED },
+    })
+  }
+
+  // 5. Update Document.currentVersionId to the new version's id
+  await db.document.update({
+    where: { id: document.id },
+    data: { currentVersionId: newVersion.id },
   })
 
   const allDocs = await db.document.findMany({
     where: { hireId: hire.id },
-    select: { docType: true },
+    select: { docType: true, currentVersionId: true },
   })
 
-  const completionPct = calculateCompletionPct(allDocs.map((d) => d.docType))
+  const completionPct = calculateCompletionPct(
+    allDocs.filter((d) => d.currentVersionId !== null).map((d) => d.docType)
+  )
   const isComplete = completionPct === 100
 
   await db.hire.update({

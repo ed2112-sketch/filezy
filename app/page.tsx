@@ -504,16 +504,25 @@ function Pricing() {
       price: "$19",
       period: "/month",
       desc: "For businesses hiring regularly",
-      features: ["10 hires per year", "All 4 document types", "Accountant forwarding", "Automatic reminders", "Priority support", "Download all as ZIP"],
+      features: ["10 hires per year", "All 4 document types", "Accountant forwarding", "Automatic reminders", "Self-onboarding link", "Bulk download ZIP"],
+      cta: "Start free trial",
+      popular: false,
+    },
+    {
+      name: "Pro",
+      price: "$39",
+      period: "/month",
+      desc: "For growing teams",
+      features: ["30 hires per year", "SMS reminders", "3 locations", "5 team members", "Document expiration alerts", "New hire reports", "Priority support"],
       cta: "Start free trial",
       popular: true,
     },
     {
-      name: "Growth",
-      price: "$39",
+      name: "Business",
+      price: "$79",
       period: "/month",
       desc: "For high-volume hiring",
-      features: ["Unlimited hires", "Custom document types", "SMS notifications", "Accountant forwarding", "Automatic reminders", "Priority support", "API access"],
+      features: ["Unlimited hires", "Unlimited everything", "API access", "Custom branding", "Compliance reports", "Priority support"],
       cta: "Start free trial",
       popular: false,
     },
@@ -534,7 +543,7 @@ function Pricing() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan, i) => (
             <div
               key={i}
@@ -545,7 +554,7 @@ function Pricing() {
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#136334] text-white text-[0.7rem] font-semibold px-4 py-1 rounded-full">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#136334] text-white text-[0.7rem] font-semibold px-4 py-1 rounded-full whitespace-nowrap">
                   Most Popular
                 </div>
               )}
@@ -736,7 +745,7 @@ function FAQ() {
     },
     {
       q: "What documents does Filezy collect?",
-      a: "W-4 (federal tax form), I-9 (identity verification), direct deposit information, and the signed offer letter. On the Growth plan, you can add custom document types.",
+      a: "W-4 (federal tax form), I-9 (identity verification), direct deposit information, and the signed offer letter. On the Business plan, you get API access and custom branding.",
     },
     {
       q: "Is it secure?",

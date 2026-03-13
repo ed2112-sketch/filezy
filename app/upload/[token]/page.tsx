@@ -15,8 +15,8 @@ import { DOCUMENT_TYPES, REQUIRED_DOC_TYPES } from "@/lib/documents"
 
 type DocStatus = {
   docType: string
-  fileName: string
-  uploadedAt: string
+  fileName: string | null
+  uploadedAt: string | null
 }
 
 type HireData = {
@@ -286,7 +286,7 @@ export default function UploadPage() {
               description={doc.description}
               instructions={doc.instructions}
               uploaded={!!uploaded}
-              uploadedFileName={uploaded?.fileName}
+              uploadedFileName={uploaded?.fileName ?? undefined}
               isUploading={isUploading}
               wasJustUploaded={wasJustUploaded}
               onFileSelect={(file) => handleUpload(docType, file)}

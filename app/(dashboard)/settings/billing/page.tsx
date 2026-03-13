@@ -42,8 +42,8 @@ const PLANS = [
     popular: true,
   },
   {
-    key: "GROWTH",
-    name: "Growth",
+    key: "PRO",
+    name: "Pro",
     price: "$39",
     period: "/mo",
     description: "For teams that hire often",
@@ -54,7 +54,23 @@ const PLANS = [
       "Priority support",
       "Advanced reporting",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_GROWTH_PRICE_ID!,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!,
+    icon: Rocket,
+  },
+  {
+    key: "BUSINESS",
+    name: "Business",
+    price: "$79",
+    period: "/month",
+    description: "For large organizations",
+    features: [
+      "Unlimited hires",
+      "Unlimited everything",
+      "API access",
+      "Custom branding",
+      "Priority support",
+    ],
+    priceId: process.env.NEXT_PUBLIC_STRIPE_BUSINESS_PRICE_ID!,
     icon: Rocket,
   },
 ]
@@ -195,7 +211,7 @@ export default function BillingPage() {
                 <span className="text-sm text-muted-foreground">
                   {currentPlan === "FREE" && "1 hire per year"}
                   {currentPlan === "STARTER" && "10 hires per year"}
-                  {currentPlan === "GROWTH" && "Unlimited hires"}
+                  {(currentPlan === "PRO" || currentPlan === "BUSINESS") && "Unlimited hires"}
                 </span>
               </div>
             </div>
@@ -223,7 +239,8 @@ export default function BillingPage() {
         {PLANS.map((plan) => {
           const isCurrent = plan.key === currentPlan
           const isDowngrade =
-            (currentPlan === "GROWTH" && plan.key !== "GROWTH") ||
+            (currentPlan === "BUSINESS" && plan.key !== "BUSINESS") ||
+            (currentPlan === "PRO" && plan.key !== "PRO" && plan.key !== "BUSINESS") ||
             (currentPlan === "STARTER" && plan.key === "FREE")
 
           return (

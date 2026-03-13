@@ -11,16 +11,19 @@ export default async function DashboardLayout({
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
-  const business = await db.business.findUnique({
-    where: { ownerId: session.user.id },
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: { ownedBusiness: true, business: true },
   })
-  if (!business) redirect("/signup")
+  const business = user?.ownedBusiness ?? user?.business
+  if (!business || !user) redirect("/signup")
 
   return (
     <DashboardShell
-      userName={session.user.name ?? session.user.email ?? "User"}
-      userEmail={session.user.email ?? ""}
-      userImage={session.user.image ?? undefined}
+      userName={user.name ?? user.email ?? "User"}
+      userEmail={user.email ?? ""}
+      userImage={user.image ?? undefined}
+      user={{ name: user.name, email: user.email, image: user.image, role: user.role }}
     >
       {children}
     </DashboardShell>
