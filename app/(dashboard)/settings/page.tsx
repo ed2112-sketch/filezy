@@ -34,7 +34,7 @@ export default function SettingsPage() {
     state: "",
     accountantName: "",
     accountantEmail: "",
-    plan: "FREE",
+    plan: "STARTER",
   })
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function SettingsPage() {
           state: data.state ?? "",
           accountantName: data.accountantName ?? "",
           accountantEmail: data.accountantEmail ?? "",
-          plan: data.plan ?? "FREE",
+          plan: data.plan ?? "STARTER",
         })
       } catch {
         setError("Failed to load settings.")
@@ -105,10 +105,9 @@ export default function SettingsPage() {
   }
 
   const planLabels: Record<string, string> = {
-    FREE: "Free",
     STARTER: "Starter",
+    GROWTH: "Growth",
     PRO: "Pro",
-    BUSINESS: "Business",
   }
 
   return (
@@ -225,24 +224,24 @@ export default function SettingsPage() {
                 <Badge className="bg-[#136334]/10 text-[#136334] hover:bg-[#136334]/15">
                   {planLabels[form.plan] ?? form.plan}
                 </Badge>
-                {form.plan === "FREE" && (
-                  <span className="text-sm text-muted-foreground">
-                    1 hire per year
-                  </span>
-                )}
                 {form.plan === "STARTER" && (
                   <span className="text-sm text-muted-foreground">
-                    10 hires per year
+                    Pay-per-onboarding
                   </span>
                 )}
-                {(form.plan === "PRO" || form.plan === "BUSINESS") && (
+                {form.plan === "GROWTH" && (
                   <span className="text-sm text-muted-foreground">
-                    Unlimited hires
+                    25 included onboardings/mo
+                  </span>
+                )}
+                {form.plan === "PRO" && (
+                  <span className="text-sm text-muted-foreground">
+                    75 included onboardings/mo
                   </span>
                 )}
               </div>
             </div>
-            {form.plan !== "PRO" && form.plan !== "BUSINESS" && (
+            {form.plan !== "PRO" && (
               <Button variant="outline" className="gap-2">
                 <CreditCard className="h-4 w-4" />
                 Upgrade

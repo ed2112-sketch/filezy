@@ -70,7 +70,7 @@ model Business {
   accountantEmail          String?
   accountantName           String?
   state                    String?
-  plan                     Plan        @default(FREE)
+  plan                     Plan        @default(STARTER)
   stripeCustomerId         String?     @unique
   stripeSubscriptionId     String?     @unique
   referredByAccountantId   String?
@@ -82,6 +82,12 @@ model Business {
   reminderDay2             Int         @default(7)
   reminderDay3             Int         @default(14)
   smsEnabled               Boolean     @default(false)
+  workflowType             WorkflowType @default(EMPLOYER)
+  brandLogoUrl             String?
+  brandPrimaryColor        String?
+  brandAccentColor         String?
+  currentPeriodStart       DateTime?
+  currentPeriodEnd         DateTime?
   createdAt                DateTime    @default(now())
   updatedAt                DateTime    @updatedAt
 
@@ -95,6 +101,7 @@ model Business {
   roleTemplates     RoleTemplate[]
   auditLogs         AuditLog[]
   accountantAccess  AccountantBusinessAccess[]
+  onboardingUsage   OnboardingUsage[]
 }
 
 model Hire {
@@ -123,13 +130,14 @@ model Hire {
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
 
-  documents      Document[]
-  employee       Employee?           @relation(fields: [employeeId], references: [id])
-  location       Location?           @relation(fields: [locationId], references: [id])
-  roleTemplate   RoleTemplate?       @relation(fields: [roleTemplateId], references: [id])
-  checklist      OnboardingChecklist? @relation(fields: [checklistId], references: [id])
-  checklistItems HireChecklistItem[]
-  customContent  HireCustomContent[]
+  documents       Document[]
+  employee        Employee?           @relation(fields: [employeeId], references: [id])
+  location        Location?           @relation(fields: [locationId], references: [id])
+  roleTemplate    RoleTemplate?       @relation(fields: [roleTemplateId], references: [id])
+  checklist       OnboardingChecklist? @relation(fields: [checklistId], references: [id])
+  checklistItems  HireChecklistItem[]
+  customContent   HireCustomContent[]
+  onboardingUsage OnboardingUsage?
 
   @@index([locationId])
   @@index([employeeId])
@@ -439,11 +447,31 @@ model AccountantBusinessAccess {
   @@unique([accountantId, businessId])
 }
 
+model OnboardingUsage {
+  id            String   @id @default(cuid())
+  businessId    String
+  hireId        String   @unique
+  completedAt   DateTime
+  periodStart   DateTime
+  periodEnd     DateTime
+  chargedCents  Int?
+  stripeUsageId String?
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  hire          Hire     @relation(fields: [hireId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, periodStart])
+}
+
 enum Plan {
-  FREE
   STARTER
+  GROWTH
   PRO
-  BUSINESS
+}
+
+enum WorkflowType {
+  EMPLOYER
+  ACCOUNTANT
+  STAFFING_AGENCY
 }
 
 enum HireStatus {

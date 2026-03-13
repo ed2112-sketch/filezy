@@ -16,61 +16,49 @@ import { Badge } from "@/components/ui/badge"
 
 const PLANS = [
   {
-    key: "FREE",
-    name: "Free",
+    key: "STARTER",
+    name: "Starter",
     price: "$0",
     period: "/mo",
-    description: "Get started with the basics",
-    features: ["1 hire per year", "Standard documents", "Email support"],
+    description: "Pay only for what you use",
+    features: [
+      "0 included onboardings",
+      "$3.00 per onboarding",
+      "All features included",
+      "Email support",
+    ],
     priceId: null,
     icon: CreditCard,
   },
   {
-    key: "STARTER",
-    name: "Starter",
-    price: "$19",
+    key: "GROWTH",
+    name: "Growth",
+    price: "$49",
     period: "/mo",
     description: "For growing businesses",
     features: [
-      "10 hires per year",
-      "Standard documents",
-      "Email support",
-      "Priority processing",
+      "25 included onboardings/mo",
+      "$2.00 per extra onboarding",
+      "All features included",
+      "Priority support",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID!,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_GROWTH_PRICE_ID!,
     icon: Zap,
     popular: true,
   },
   {
     key: "PRO",
     name: "Pro",
-    price: "$39",
+    price: "$99",
     period: "/mo",
-    description: "For teams that hire often",
+    description: "For high-volume teams",
     features: [
-      "Unlimited hires",
-      "Custom documents",
-      "SMS notifications",
+      "75 included onboardings/mo",
+      "$1.50 per extra onboarding",
+      "All features included",
       "Priority support",
-      "Advanced reporting",
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!,
-    icon: Rocket,
-  },
-  {
-    key: "BUSINESS",
-    name: "Business",
-    price: "$79",
-    period: "/month",
-    description: "For large organizations",
-    features: [
-      "Unlimited hires",
-      "Unlimited everything",
-      "API access",
-      "Custom branding",
-      "Priority support",
-    ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_BUSINESS_PRICE_ID!,
     icon: Rocket,
   },
 ]
@@ -78,7 +66,7 @@ const PLANS = [
 export default function BillingPage() {
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(true)
-  const [currentPlan, setCurrentPlan] = useState("FREE")
+  const [currentPlan, setCurrentPlan] = useState("STARTER")
   const [hasSubscription, setHasSubscription] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [message, setMessage] = useState<{
@@ -104,8 +92,8 @@ export default function BillingPage() {
         const res = await fetch("/api/business/settings")
         if (!res.ok) return
         const data = await res.json()
-        setCurrentPlan(data.plan ?? "FREE")
-        setHasSubscription(data.plan !== "FREE")
+        setCurrentPlan(data.plan ?? "STARTER")
+        setHasSubscription(data.plan !== "STARTER")
       } catch {
         // silent
       } finally {
@@ -209,9 +197,9 @@ export default function BillingPage() {
                   {PLANS.find((p) => p.key === currentPlan)?.name ?? currentPlan}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  {currentPlan === "FREE" && "1 hire per year"}
-                  {currentPlan === "STARTER" && "10 hires per year"}
-                  {(currentPlan === "PRO" || currentPlan === "BUSINESS") && "Unlimited hires"}
+                  {currentPlan === "STARTER" && "Pay-per-onboarding"}
+                  {currentPlan === "GROWTH" && "25 included onboardings/mo"}
+                  {currentPlan === "PRO" && "75 included onboardings/mo"}
                 </span>
               </div>
             </div>
@@ -239,9 +227,8 @@ export default function BillingPage() {
         {PLANS.map((plan) => {
           const isCurrent = plan.key === currentPlan
           const isDowngrade =
-            (currentPlan === "BUSINESS" && plan.key !== "BUSINESS") ||
-            (currentPlan === "PRO" && plan.key !== "PRO" && plan.key !== "BUSINESS") ||
-            (currentPlan === "STARTER" && plan.key === "FREE")
+            (currentPlan === "PRO" && plan.key !== "PRO") ||
+            (currentPlan === "GROWTH" && plan.key === "STARTER")
 
           return (
             <Card
