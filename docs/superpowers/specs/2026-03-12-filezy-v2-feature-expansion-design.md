@@ -575,7 +575,7 @@ Total clicks, unique visitors, conversion rate, clicks over time (weekly chart).
 
 Every action logged: uploads, signatures, approvals, rejections, downloads, views, logins, reminders sent. Stored in AuditLog table. Viewable in dashboard, filterable by employee, action type, date range.
 
-- Growth plan: full audit log
+- Pro+ plans: full audit log
 - Starter: basic activity feed (last 30 days, limited actions)
 - Free: no audit access
 
