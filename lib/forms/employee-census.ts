@@ -1,0 +1,103 @@
+import type { FormDefinition } from "./types"
+
+export const employeeCensusForm: FormDefinition = {
+  id: "employee-census",
+  docType: "EMPLOYEE_CENSUS",
+  title: "Employee Census Data",
+  description: "Employee information for benefits enrollment and payroll setup.",
+  sections: [
+    { id: "employee", title: "Employee Information" },
+    { id: "employment", title: "Employment Details" },
+  ],
+  fields: [
+    {
+      name: "fullName",
+      label: "Full Name",
+      type: "text",
+      required: true,
+      section: "employee",
+    },
+    {
+      name: "dateOfBirth",
+      label: "Date of Birth",
+      type: "date",
+      required: true,
+      section: "employee",
+    },
+    {
+      name: "ssn",
+      label: "Social Security Number",
+      type: "ssn",
+      required: true,
+      placeholder: "XXX-XX-XXXX",
+      section: "employee",
+    },
+    {
+      name: "gender",
+      label: "Gender",
+      type: "select",
+      required: false,
+      options: [
+        { value: "male", label: "Male" },
+        { value: "female", label: "Female" },
+        { value: "non_binary", label: "Non-binary" },
+        { value: "prefer_not_to_say", label: "Prefer not to say" },
+      ],
+      section: "employee",
+    },
+    {
+      name: "maritalStatus",
+      label: "Marital Status",
+      type: "select",
+      required: false,
+      options: [
+        { value: "single", label: "Single" },
+        { value: "married", label: "Married" },
+        { value: "domestic_partner", label: "Domestic Partner" },
+      ],
+      section: "employee",
+    },
+    {
+      name: "hireDate",
+      label: "Hire Date",
+      type: "date",
+      required: true,
+      section: "employment",
+    },
+    {
+      name: "jobTitle",
+      label: "Job Title",
+      type: "text",
+      required: true,
+      section: "employment",
+    },
+    {
+      name: "annualSalary",
+      label: "Annual Salary",
+      type: "number",
+      required: true,
+      section: "employment",
+    },
+    {
+      name: "payFrequency",
+      label: "Pay Frequency",
+      type: "select",
+      required: true,
+      options: [
+        { value: "weekly", label: "Weekly" },
+        { value: "biweekly", label: "Biweekly" },
+        { value: "semi_monthly", label: "Semi-monthly" },
+        { value: "monthly", label: "Monthly" },
+      ],
+      section: "employment",
+    },
+    {
+      name: "numberOfDependents",
+      label: "Number of Dependents",
+      type: "number",
+      required: false,
+      section: "employment",
+    },
+  ],
+  requiresSignature: false,
+}
