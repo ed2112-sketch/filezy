@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { resend, FROM_EMAIL, FROM_NAME } from "@/lib/resend"
+import { getResend, FROM_EMAIL, FROM_NAME } from "@/lib/resend"
 import { DOCUMENT_TYPES } from "@/lib/documents"
 
 export async function GET(request: NextRequest) {
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     try {
       // Expiration-day (or past-due) alert
       if (expiresAt <= now && !exp.expirationSentAt) {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: `${FROM_NAME} <${FROM_EMAIL}>`,
           to: ownerEmail,
           subject: `Document Expired: ${docLabel} for ${employeeName}`,
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
       // 7-day alert
       if (expiresAt <= in7Days && expiresAt > now && !exp.reminder7SentAt) {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: `${FROM_NAME} <${FROM_EMAIL}>`,
           to: ownerEmail,
           subject: `Document Expiring in ${daysUntil} Day${daysUntil === 1 ? "" : "s"}: ${docLabel} for ${employeeName}`,
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 
       // 30-day alert
       if (expiresAt <= in30Days && expiresAt > now && !exp.reminder30SentAt) {
-        await resend.emails.send({
+        await getResend().emails.send({
           from: `${FROM_NAME} <${FROM_EMAIL}>`,
           to: ownerEmail,
           subject: `Document Expiring in ${daysUntil} Days: ${docLabel} for ${employeeName}`,
