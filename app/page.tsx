@@ -16,6 +16,9 @@ import {
   Star,
   Camera,
   Mail,
+  Briefcase,
+  Calculator,
+  Check,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -26,6 +29,7 @@ export default function LandingPage() {
       <Hero />
       <LogoBar />
       <HowItWorks />
+      <WorkflowTypes />
       <PhoneMockup />
       <Features />
       <Pricing />
@@ -98,17 +102,15 @@ function Hero() {
           </div>
 
           <h1 className="text-[3.25rem] md:text-[4.25rem] font-bold leading-[1.05] tracking-tight mb-6">
-            New hire paperwork,{" "}
+            Document onboarding for{" "}
             <span className="relative">
-              <span className="relative z-10">done in minutes</span>
+              <span className="relative z-10">every business</span>
               <span className="absolute bottom-2 left-0 right-0 h-3 bg-[#36c973]/20 -z-0 rounded-sm" />
             </span>
           </h1>
 
           <p className="text-[1.2rem] md:text-[1.35rem] leading-relaxed text-[#59626d] max-w-2xl mx-auto mb-10">
-            Send your new hire a link. They upload their W-4, I-9, direct deposit info,
-            and signed offer letter from their phone. Done — their paperwork goes straight
-            to your accountant.
+            Whether you're hiring employees, onboarding clients, or placing workers — collect forms, signatures, and documents in minutes.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -116,7 +118,7 @@ function Hero() {
               href="/signup"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-2xl bg-[#136334] px-8 py-4 text-[1rem] font-semibold text-white hover:bg-[#0f5029] transition-all active:scale-[0.98] shadow-lg shadow-[#136334]/20"
             >
-              Get started — it's free
+              Start free
               <ArrowRight className="h-4.5 w-4.5" />
             </Link>
             <a
@@ -298,6 +300,66 @@ function HowItWorks() {
               )}
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─── Workflow Types ─── */
+function WorkflowTypes() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-[#141609]">Built for how you work</h2>
+          <p className="mt-4 text-lg text-[#59626d] max-w-2xl mx-auto">
+            Choose your workflow at signup. Get purpose-built templates and terminology that match your business.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Employer Card */}
+          <div className="bg-[#f9fafb] rounded-2xl p-8 border border-gray-100">
+            <div className="h-12 w-12 rounded-xl bg-[#136334]/10 flex items-center justify-center mb-6">
+              <Briefcase className="h-6 w-6 text-[#136334]" />
+            </div>
+            <h3 className="text-xl font-bold text-[#141609] mb-3">For Employers</h3>
+            <p className="text-[#59626d] mb-6">Onboard new hires with W-4, I-9, direct deposit, offer letters, and e-signatures.</p>
+            <ul className="space-y-2 text-sm text-[#59626d]">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Tax form collection</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Auto-detect state tax forms</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> E-sign &amp; PDF fill</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Accountant forwarding</li>
+            </ul>
+          </div>
+          {/* Accountant Card */}
+          <div className="bg-[#f9fafb] rounded-2xl p-8 border border-gray-100">
+            <div className="h-12 w-12 rounded-xl bg-[#136334]/10 flex items-center justify-center mb-6">
+              <Calculator className="h-6 w-6 text-[#136334]" />
+            </div>
+            <h3 className="text-xl font-bold text-[#141609] mb-3">For Accountants</h3>
+            <p className="text-[#59626d] mb-6">Collect W-9s, EIN letters, bank details, and payroll records from your clients.</p>
+            <ul className="space-y-2 text-sm text-[#59626d]">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> W-9 &amp; tax document collection</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Client-specific portals</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Recurring document requests</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Employee census data</li>
+            </ul>
+          </div>
+          {/* Staffing Agency Card */}
+          <div className="bg-[#f9fafb] rounded-2xl p-8 border border-gray-100">
+            <div className="h-12 w-12 rounded-xl bg-[#136334]/10 flex items-center justify-center mb-6">
+              <Users className="h-6 w-6 text-[#136334]" />
+            </div>
+            <h3 className="text-xl font-bold text-[#141609] mb-3">For Staffing Agencies</h3>
+            <p className="text-[#59626d] mb-6">High-volume worker onboarding with bulk invites and real-time progress tracking.</p>
+            <ul className="space-y-2 text-sm text-[#59626d]">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> CSV bulk invites</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Background check consent</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> Certification tracking</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#136334]" /> White-label branding</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -491,38 +553,29 @@ function Features() {
 function Pricing() {
   const plans = [
     {
-      name: "Free",
-      price: "$0",
-      period: "forever",
-      desc: "Try Filezy with your next hire",
-      features: ["1 hire per year", "All 4 document types", "Accountant forwarding", "Mobile upload link", "Email support"],
+      name: "Starter",
+      price: "$3",
+      period: "/onboarding",
+      desc: "Pay as you go",
+      features: ["All features included", "$3 per completed onboarding", "No monthly commitment", "Unlimited team members"],
       cta: "Start free",
       popular: false,
     },
     {
-      name: "Starter",
-      price: "$19",
-      period: "/month",
-      desc: "For businesses hiring regularly",
-      features: ["10 hires per year", "All 4 document types", "Accountant forwarding", "Automatic reminders", "Self-onboarding link", "Bulk download ZIP"],
-      cta: "Start free trial",
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "$39",
-      period: "/month",
-      desc: "For growing teams",
-      features: ["30 hires per year", "SMS reminders", "3 locations", "5 team members", "Document expiration alerts", "New hire reports", "Priority support"],
+      name: "Growth",
+      price: "$49",
+      period: "/mo",
+      desc: "25 included",
+      features: ["All features included", "25 onboardings/mo included", "$2 per additional", "Unlimited team members"],
       cta: "Start free trial",
       popular: true,
     },
     {
-      name: "Business",
-      price: "$79",
-      period: "/month",
-      desc: "For high-volume hiring",
-      features: ["Unlimited hires", "Unlimited everything", "API access", "Custom branding", "Compliance reports", "Priority support"],
+      name: "Pro",
+      price: "$99",
+      period: "/mo",
+      desc: "75 included",
+      features: ["All features included", "75 onboardings/mo included", "$1.50 per additional", "Priority support"],
       cta: "Start free trial",
       popular: false,
     },
@@ -543,7 +596,7 @@ function Pricing() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {plans.map((plan, i) => (
             <div
               key={i}
@@ -613,12 +666,11 @@ function AccountantCTA() {
                 <span className="text-[0.8rem] font-medium text-white/90">Partner Program</span>
               </div>
               <h2 className="text-[2.25rem] md:text-[2.75rem] font-bold text-white leading-tight mb-4">
-                Accountants: earn 20–30% recurring commission
+                Partner Program
               </h2>
               <p className="text-white/70 text-[1.05rem] leading-relaxed mb-8">
-                Refer your clients to Filezy and earn commission on every subscription,
-                every month, for as long as they're a customer. The more you refer, the
-                higher your rate.
+                Earn 20-30% recurring commission on every business you refer to Filezy.
+                The more you refer, the higher your rate.
               </p>
 
               <div className="grid grid-cols-3 gap-4 mb-8">
