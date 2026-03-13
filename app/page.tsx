@@ -110,15 +110,15 @@ function Hero() {
           </div>
 
           <h1 className="text-[3.25rem] md:text-[4.25rem] font-bold leading-[1.05] tracking-tight mb-6">
-            Stop chasing{" "}
-            <span className="relative">
-              <span className="relative z-10">onboarding paperwork.</span>
+            Stop chasing onboarding{" "}
+            <span className="relative inline-block">
+              <span className="relative z-10">paperwork.</span>
               <span className="absolute bottom-2 left-0 right-0 h-3 bg-[#36c973]/20 -z-0 rounded-sm" />
             </span>
           </h1>
 
           <p className="text-[1.2rem] md:text-[1.35rem] leading-relaxed text-[#59626d] max-w-2xl mx-auto mb-10">
-            Onboard new hires, collect client documents, or place workers at scale, with e-signatures, PDF fill, document vault, and white-label branding built in.
+            Onboard new hires, collect client documents, or place workers at scale - with e-signatures, PDF fill, document vault, and white-label branding built in.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -259,13 +259,13 @@ function HowItWorks() {
       num: "01",
       icon: Users,
       title: "Add your people",
-      desc: "Enter a name and email, or bulk-import hundreds via CSV. Filezy generates a unique, secure upload link for each person instantly.",
+      desc: "Enter a name and email - or bulk-import hundreds via CSV. Filezy generates a unique, secure upload link for each person instantly.",
     },
     {
       num: "02",
       icon: FileSignature,
       title: "They fill, sign & upload",
-      desc: "Your people open the link on any device, fill out forms online with e-sign, snap photos of documents, and upload, all in under 5 minutes.",
+      desc: "Your people open the link on any device, fill out forms online with e-sign, snap photos of documents, and upload - all in under 5 minutes.",
     },
     {
       num: "03",
@@ -338,7 +338,7 @@ function WorkflowTypes() {
               <Briefcase className="h-6 w-6 text-[#136334]" />
             </div>
             <h3 className="text-xl font-bold text-[#141609] mb-2">For Employers</h3>
-            <p className="text-[0.95rem] text-[#59626d] mb-6">Onboard new hires with tax forms, direct deposit, offer letters, and e-signatures, all completed online.</p>
+            <p className="text-[0.95rem] text-[#59626d] mb-6">Onboard new hires with tax forms, direct deposit, offer letters, and e-signatures - all completed online.</p>
             <ul className="space-y-2.5 text-[0.9rem] text-[#59626d]">
               <li className="flex items-center gap-2.5"><Check className="h-4 w-4 text-[#136334] shrink-0" /> W-4 & I-9 e-sign and PDF fill</li>
               <li className="flex items-center gap-2.5"><Check className="h-4 w-4 text-[#136334] shrink-0" /> Auto-detect state tax forms</li>
@@ -398,7 +398,7 @@ function PhoneMockup() {
               The recipient experience
             </p>
             <h2 className="text-[2.5rem] md:text-[3rem] font-bold tracking-tight leading-tight text-white mb-6">
-              Fill out forms, sign & upload, all from their phone
+              Fill out forms, sign & upload - all from their phone
             </h2>
             <p className="text-[1.1rem] text-white/70 leading-relaxed mb-10">
               No app downloads. No account creation. Just a link that opens on any device, lets them complete tax forms with e-sign, snap document photos, and see exactly what&apos;s left.
@@ -409,8 +409,8 @@ function PhoneMockup() {
                 "Fill out W-4, I-9, W-9 forms online with e-signature",
                 "Camera capture for instant document photos",
                 "Validation tips prevent bad uploads and re-work",
-                "Clear progress bar, they know exactly what's left",
-                "White-label option, your brand, not ours",
+                "Clear progress bar - they know exactly what's left",
+                "White-label option - your brand, not ours",
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <div className="h-6 w-6 rounded-full bg-[#36c973]/20 flex items-center justify-center shrink-0 mt-0.5">
@@ -517,7 +517,7 @@ function Features() {
     {
       icon: PenLine,
       title: "E-sign & PDF fill",
-      desc: "W-4, I-9, W-9 and more, completed and signed online in the browser. No printing, no scanning. Generates audit-trailed PDFs automatically.",
+      desc: "W-4, I-9, W-9 and more - completed and signed online in the browser. No printing, no scanning. Generates audit-trailed PDFs automatically.",
     },
     {
       icon: FolderOpen,
@@ -527,7 +527,7 @@ function Features() {
     {
       icon: Palette,
       title: "White-label branding",
-      desc: "Upload your logo, set your brand colors. Your clients and employees see your brand on upload pages and emails, not ours.",
+      desc: "Upload your logo, set your brand colors. Your clients and employees see your brand on upload pages and emails - not ours.",
     },
     {
       icon: TableProperties,
@@ -557,7 +557,7 @@ function Features() {
     {
       icon: LayoutDashboard,
       title: "Real-time dashboard",
-      desc: "See who's complete, who's missing documents, and what's expiring soon, all at a glance. Filter by location, status, or role.",
+      desc: "See who's complete, who's missing documents, and what's expiring soon - all at a glance. Filter by location, status, or role.",
     },
   ]
 
@@ -574,7 +574,7 @@ function Features() {
             <span className="text-[#59626d]">On every plan.</span>
           </h2>
           <p className="text-[1.1rem] text-[#59626d] mt-4 max-w-xl mx-auto">
-            No feature gates. No tier-locked upgrades. Every plan includes every feature, you only pay based on volume.
+            No feature gates. No tier-locked upgrades. Every plan includes every feature - you only pay based on volume.
           </p>
         </div>
 
@@ -718,7 +718,7 @@ function PartnerCTA() {
                 Refer businesses, earn recurring revenue
               </h2>
               <p className="text-white/70 text-[1.05rem] leading-relaxed mb-8">
-                Accountants, consultants, and advisors, earn 20-30% recurring commission on every business you refer. The more you refer, the higher your rate.
+                Accountants, consultants, and advisors - earn 20-30% recurring commission on every business you refer. The more you refer, the higher your rate.
               </p>
 
               <div className="grid grid-cols-3 gap-4 mb-8">
@@ -853,7 +853,7 @@ function FAQ() {
     },
     {
       q: "How does the e-sign and PDF fill work?",
-      a: "For supported forms (W-4, I-9, W-9, and others), recipients can fill out the form fields directly in the browser and sign electronically, either by typing or drawing their signature. Filezy generates a signed PDF with a complete audit trail.",
+      a: "For supported forms (W-4, I-9, W-9, and others), recipients can fill out the form fields directly in the browser and sign electronically - either by typing or drawing their signature. Filezy generates a signed PDF with a complete audit trail.",
     },
     {
       q: "What if someone doesn't have a printer or scanner?",
@@ -869,11 +869,11 @@ function FAQ() {
     },
     {
       q: "Can I use my own branding?",
-      a: "Yes. Upload your logo and set your brand colors. Your clients and employees will see your brand on upload pages and in emails, Filezy stays in the background.",
+      a: "Yes. Upload your logo and set your brand colors. Your clients and employees will see your brand on upload pages and in emails - Filezy stays in the background.",
     },
     {
       q: "How does pricing work?",
-      a: "Every feature is included on every plan, no tier-locked upgrades. Starter is pay-as-you-go at $3 per completed onboarding with no monthly fee. Growth ($49/mo) includes 25 onboardings, and Pro ($99/mo) includes 75. You're only charged when someone completes all their documents.",
+      a: "Every feature is included on every plan - no tier-locked upgrades. Starter is pay-as-you-go at $3 per completed onboarding with no monthly fee. Growth ($49/mo) includes 25 onboardings, and Pro ($99/mo) includes 75. You're only charged when someone completes all their documents.",
     },
     {
       q: "How does the partner program work?",
@@ -927,7 +927,7 @@ function FinalCTA() {
               <span className="text-[#136334]">Start with Filezy today.</span>
             </h2>
             <p className="text-[1.15rem] text-[#59626d] max-w-xl mx-auto mb-10">
-              Set up your account in 2 minutes. Send your first upload link. Watch documents, signatures, and forms come back, organized and secure.
+              Set up your account in 2 minutes. Send your first upload link. Watch documents, signatures, and forms come back - organized and secure.
             </p>
             <Link
               href="/signup"
