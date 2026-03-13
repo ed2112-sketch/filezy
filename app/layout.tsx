@@ -5,7 +5,13 @@ export const metadata: Metadata = {
   title: "Filezy - Stop Chasing Onboarding Paperwork",
   description:
     "Collect documents, e-signatures, and tax forms from new hires, clients, or workers. E-sign, document vault, white-label branding, and CSV bulk invites - all on every plan.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://filezy.com"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL
+      ? process.env.NEXT_PUBLIC_APP_URL.startsWith("http")
+        ? process.env.NEXT_PUBLIC_APP_URL
+        : `https://${process.env.NEXT_PUBLIC_APP_URL}`
+      : "https://filezy.com"
+  ),
   openGraph: {
     title: "Filezy - Stop Chasing Onboarding Paperwork",
     description:
