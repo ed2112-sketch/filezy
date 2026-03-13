@@ -205,5 +205,6 @@ export async function POST(
     success: true,
     completionPct,
     status: isComplete ? "COMPLETE" : "IN_PROGRESS",
+    documentId: document.id,
   })
 }
