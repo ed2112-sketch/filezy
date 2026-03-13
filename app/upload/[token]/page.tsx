@@ -11,10 +11,15 @@ import {
   Loader2,
   PartyPopper,
   PenLine,
+  FileCheck,
+  Sun,
+  Eye,
+  Calendar,
 } from "lucide-react"
 import { DOCUMENT_TYPES, REQUIRED_DOC_TYPES } from "@/lib/documents"
 import { getFormDefinition } from "@/lib/forms"
 import { FormFillFlow } from "@/components/upload/form-fill-flow"
+import { getValidationTips } from "@/lib/document-validation-tips"
 
 type DocStatus = {
   docType: string
@@ -376,6 +381,10 @@ function ErrorCard({
   )
 }
 
+const tipIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  FileCheck, PenLine, Camera, Sun, Eye, AlertCircle, Calendar,
+}
+
 function DocumentCard({
   docType,
   label,
@@ -431,6 +440,21 @@ function DocumentCard({
         <p className="text-sm text-muted-foreground mt-3 ml-7 leading-relaxed">
           {instructions}
         </p>
+      )}
+
+      {/* Validation Tips — only show for docs not yet uploaded */}
+      {!uploaded && getValidationTips(docType).length > 0 && (
+        <div className="mt-3 ml-7 space-y-1.5">
+          {getValidationTips(docType).map((tip, i) => {
+            const Icon = tipIcons[tip.icon] || FileCheck
+            return (
+              <div key={i} className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">
+                <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{tip.text}</span>
+              </div>
+            )
+          })}
+        </div>
       )}
 
       {uploaded && uploadedFileName && (
