@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { uploadFile, buildFilePath } from "@/lib/storage"
 import { calculateCompletionPct } from "@/lib/documents"
 import { UploaderType, DocumentVersionStatus } from "@/lib/generated/prisma/client"
+import { recordOnboardingUsage } from "@/lib/usage-tracking"
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 const ALLOWED_TYPES = [
@@ -21,7 +22,7 @@ export async function GET(
   const hire = await db.hire.findUnique({
     where: { uploadToken: token },
     include: {
-      business: { select: { name: true } },
+      business: { select: { name: true, brandLogoUrl: true, brandPrimaryColor: true, brandAccentColor: true } },
       documents: {
         select: {
           docType: true,
@@ -52,6 +53,9 @@ export async function GET(
     position: hire.position,
     status: hire.status,
     completionPct: hire.completionPct,
+    brandLogoUrl: hire.business.brandLogoUrl ?? null,
+    brandPrimaryColor: hire.business.brandPrimaryColor ?? null,
+    brandAccentColor: hire.business.brandAccentColor ?? null,
     documents: hire.documents.map((d) => ({
       docType: d.docType,
       fileName: d.currentVersion?.fileName ?? null,
@@ -200,6 +204,10 @@ export async function POST(
       status: isComplete ? "COMPLETE" : "IN_PROGRESS",
     },
   })
+
+  if (isComplete) {
+    await recordOnboardingUsage(hire.id, hire.businessId)
+  }
 
   return Response.json({
     success: true,
