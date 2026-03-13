@@ -21,6 +21,9 @@ export async function GET() {
     accountantName: business.accountantName,
     accountantEmail: business.accountantEmail,
     plan: business.plan,
+    brandLogoUrl: business.brandLogoUrl,
+    brandPrimaryColor: business.brandPrimaryColor,
+    brandAccentColor: business.brandAccentColor,
   })
 }
 
@@ -38,11 +41,27 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, state, accountantName, accountantEmail } = body
+  const { name, state, accountantName, accountantEmail, brandPrimaryColor, brandAccentColor } = body
 
   if (name !== undefined && (!name || typeof name !== "string")) {
     return NextResponse.json(
       { error: "Business name is required." },
+      { status: 400 }
+    )
+  }
+
+  const hexColorRegex = /^#[0-9a-fA-F]{6}$/
+
+  if (brandPrimaryColor !== undefined && brandPrimaryColor !== null && brandPrimaryColor !== "" && !hexColorRegex.test(brandPrimaryColor)) {
+    return NextResponse.json(
+      { error: "Invalid primary color format. Use a 6-digit hex color (e.g. #136334)." },
+      { status: 400 }
+    )
+  }
+
+  if (brandAccentColor !== undefined && brandAccentColor !== null && brandAccentColor !== "" && !hexColorRegex.test(brandAccentColor)) {
+    return NextResponse.json(
+      { error: "Invalid accent color format. Use a 6-digit hex color (e.g. #36c973)." },
       { status: 400 }
     )
   }
@@ -58,6 +77,12 @@ export async function PATCH(request: NextRequest) {
       ...(accountantEmail !== undefined && {
         accountantEmail: accountantEmail?.trim() || null,
       }),
+      ...(brandPrimaryColor !== undefined && {
+        brandPrimaryColor: brandPrimaryColor || null,
+      }),
+      ...(brandAccentColor !== undefined && {
+        brandAccentColor: brandAccentColor || null,
+      }),
     },
   })
 
@@ -67,5 +92,8 @@ export async function PATCH(request: NextRequest) {
     accountantName: updated.accountantName,
     accountantEmail: updated.accountantEmail,
     plan: updated.plan,
+    brandLogoUrl: updated.brandLogoUrl,
+    brandPrimaryColor: updated.brandPrimaryColor,
+    brandAccentColor: updated.brandAccentColor,
   })
 }
