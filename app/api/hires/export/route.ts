@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { REQUIRED_DOC_TYPES, DOCUMENT_TYPES } from "@/lib/documents"
-import type { Plan } from "@/lib/generated/prisma/client"
+import { REQUIRED_DOC_TYPES, DOCUMENT_TYPES, calculateCompletionPct } from "@/lib/documents"
 
 /** Escape a single CSV field value: wrap in quotes and double any internal quotes. */
 function csvField(value: string | number | null | undefined): string {
@@ -70,7 +69,7 @@ export async function GET() {
       csvField(hire.position),
       csvField(hire.status),
       csvField(startDate),
-      csvField(hire.completionPct),
+      csvField(calculateCompletionPct([...uploadedDocTypes])),
       csvField(missingLabels),
       csvField(hire.location?.name),
     ].join(",")

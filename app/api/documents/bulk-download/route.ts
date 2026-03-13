@@ -13,6 +13,19 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // Parse body first, before any DB calls
+  let hireIds: string[]
+  try {
+    const body = await request.json()
+    hireIds = body?.hireIds
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 })
+  }
+
+  if (!Array.isArray(hireIds) || hireIds.length === 0) {
+    return Response.json({ error: "hireIds must be a non-empty array" }, { status: 400 })
+  }
+
   // Get user's business (owner or team member)
   const user = await db.user.findUnique({
     where: { id: session.user.id },
@@ -26,13 +39,6 @@ export async function POST(request: NextRequest) {
   // Check plan limit for bulk download
   if (!checkFeatureAccess(userBusiness.plan as Plan, "bulkDownload")) {
     return Response.json({ error: "Upgrade required" }, { status: 403 })
-  }
-
-  const body = await request.json()
-  const { hireIds } = body as { hireIds: string[] }
-
-  if (!Array.isArray(hireIds) || hireIds.length === 0) {
-    return Response.json({ error: "hireIds must be a non-empty array" }, { status: 400 })
   }
 
   // Fetch all requested hires, verifying they belong to this business
@@ -52,6 +58,19 @@ export async function POST(request: NextRequest) {
 
   if (hires.length === 0) {
     return Response.json({ error: "No accessible hires found" }, { status: 404 })
+  }
+
+  // Track used archive paths to prevent collisions
+  const usedPaths = new Set<string>()
+  function uniqueArchivePath(baseName: string, ext: string): string {
+    let path = `${baseName}${ext}`
+    let counter = 1
+    while (usedPaths.has(path)) {
+      path = `${baseName} (${counter})${ext}`
+      counter++
+    }
+    usedPaths.add(path)
+    return path
   }
 
   // Build the ZIP archive using a TransformStream so we can stream it in the response
@@ -89,7 +108,7 @@ export async function POST(request: NextRequest) {
         const lastDot = version.fileName.lastIndexOf(".")
         const ext = lastDot !== -1 ? version.fileName.slice(lastDot) : ""
 
-        const archiveName = `${hire.employeeName}/${label}${ext}`
+        const archiveName = uniqueArchivePath(`${hire.employeeName}/${label}`, ext)
 
         try {
           // Get a short-lived signed URL and fetch the file content
@@ -108,13 +127,14 @@ export async function POST(request: NextRequest) {
     }
 
     await archive.finalize()
-  })()
+  })().catch((err) => {
+    writer.abort(err)
+  })
 
   return new Response(readable, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": 'attachment; filename="documents.zip"',
-      "Transfer-Encoding": "chunked",
     },
   })
 }
