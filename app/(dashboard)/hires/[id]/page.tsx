@@ -48,7 +48,11 @@ export default async function HireDetailPage({
 
   const hire = await db.hire.findUnique({
     where: { id },
-    include: { documents: true },
+    include: {
+      documents: {
+        include: { currentVersion: { select: { fileName: true } } },
+      },
+    },
   })
 
   if (!hire || hire.businessId !== business.id) notFound()
@@ -213,7 +217,7 @@ export default async function HireDetailPage({
                       </p>
                       {uploaded && (
                         <p className="text-xs text-muted-foreground">
-                          {uploaded.fileName}
+                          {uploaded.currentVersion?.fileName}
                         </p>
                       )}
                     </div>

@@ -15,8 +15,8 @@ import { DOCUMENT_TYPES, REQUIRED_DOC_TYPES } from "@/lib/documents"
 
 type DocStatus = {
   docType: string
-  fileName: string
-  uploadedAt: string
+  fileName: string | null
+  uploadedAt: string | null
 }
 
 type HireData = {
