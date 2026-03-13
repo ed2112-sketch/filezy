@@ -281,7 +281,7 @@ function HowItWorks() {
   ]
 
   return (
-    <section id="how-it-works" className="py-24 md:py-32">
+    <section id="how-it-works" className="py-16 md:py-20">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[0.8rem] font-semibold text-[#136334] uppercase tracking-widest mb-3">
@@ -323,7 +323,7 @@ function HowItWorks() {
 /* ─── Workflow Types ─── */
 function WorkflowTypes() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-16 md:py-20 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[0.8rem] font-semibold text-[#136334] uppercase tracking-widest mb-3">
@@ -391,7 +391,7 @@ function WorkflowTypes() {
 /* ─── Phone Mockup -What the recipient sees ─── */
 function PhoneMockup() {
   return (
-    <section className="py-24 md:py-32 bg-[#136334] relative overflow-hidden">
+    <section className="py-16 md:py-20 bg-[#136334] relative overflow-hidden">
       {/* Background texture */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNCkiLz48L3N2Zz4=')] pointer-events-none" />
 
@@ -567,7 +567,7 @@ function Features() {
   ]
 
   return (
-    <section id="features" className="py-24 md:py-32">
+    <section id="features" className="py-16 md:py-20">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[0.8rem] font-semibold text-[#136334] uppercase tracking-widest mb-3">
@@ -632,7 +632,7 @@ function Pricing() {
   ]
 
   return (
-    <section id="pricing" className="py-24 md:py-32 bg-white">
+    <section id="pricing" className="py-16 md:py-20 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[0.8rem] font-semibold text-[#136334] uppercase tracking-widest mb-3">
@@ -706,7 +706,7 @@ function Pricing() {
 /* ─── Partner Program CTA ─── */
 function PartnerCTA() {
   return (
-    <section id="partners" className="py-24 md:py-32">
+    <section id="partners" className="py-16 md:py-20">
       <div className="max-w-6xl mx-auto px-6">
         <div className="relative bg-[#136334] rounded-[2rem] p-10 md:p-16 overflow-hidden">
           {/* Background pattern */}
@@ -802,7 +802,7 @@ function Testimonials() {
   ]
 
   return (
-    <section className="py-24 md:py-32 bg-white">
+    <section className="py-16 md:py-20 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[0.8rem] font-semibold text-[#136334] uppercase tracking-widest mb-3">
@@ -887,7 +887,7 @@ function FAQ() {
   ]
 
   return (
-    <section className="py-24 md:py-32">
+    <section className="py-16 md:py-20">
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-16">
           <p className="text-[0.8rem] font-semibold text-[#136334] uppercase tracking-widest mb-3">
@@ -919,7 +919,7 @@ function FAQ() {
 /* ─── Final CTA ─── */
 function FinalCTA() {
   return (
-    <section className="py-24 md:py-32 bg-white">
+    <section className="py-16 md:py-20 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="relative bg-[#f9fafb] rounded-[2rem] border border-[#e5e7eb] p-12 md:p-20 text-center overflow-hidden">
           {/* Subtle glow */}
@@ -954,7 +954,7 @@ function FinalCTA() {
 /* ─── Footer ─── */
 function Footer() {
   return (
-    <footer className="py-16 border-t border-[#e5e7eb]">
+    <footer className="py-12 border-t border-[#e5e7eb]">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
           <div className="col-span-2 md:col-span-1">
