@@ -11,14 +11,17 @@ import {
   CheckCircle2,
   Circle,
   Download,
-  FileText,
+  AlertCircle,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { DOCUMENT_TYPES, REQUIRED_DOC_TYPES } from "@/lib/documents"
 import { HireActions } from "./hire-actions"
+import {
+  DocumentVersionHistory,
+  PendingApprovalsCard,
+} from "./document-versions"
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   PENDING: { label: "Pending", className: "bg-gray-100 text-gray-700" },
@@ -50,7 +53,27 @@ export default async function HireDetailPage({
     where: { id },
     include: {
       documents: {
-        include: { currentVersion: { select: { fileName: true } } },
+        include: {
+          currentVersion: {
+            select: { fileName: true },
+          },
+          versions: {
+            orderBy: { version: "desc" },
+            select: {
+              id: true,
+              version: true,
+              fileName: true,
+              uploadedAt: true,
+              status: true,
+            },
+          },
+          expiration: {
+            select: {
+              expiresAt: true,
+              isResolved: true,
+            },
+          },
+        },
       },
     },
   })
@@ -59,8 +82,6 @@ export default async function HireDetailPage({
 
   const cfg = statusConfig[hire.status] ?? statusConfig.PENDING
   const uploadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}`
-
-  const uploadedTypes = new Set(hire.documents.map((d) => d.docType))
 
   // Timeline steps
   const timeline: TimelineStep[] = [
@@ -79,6 +100,32 @@ export default async function HireDetailPage({
       done: !!hire.accountantNotifiedAt,
     },
   ]
+
+  // Check if current user can approve (OWNER or ADMIN, not VIEWER)
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+  const canApprove = user?.role === "OWNER" || user?.role === "ADMIN"
+
+  // Serialize documents for client components (dates -> strings)
+  const serializedDocuments = hire.documents.map((doc) => ({
+    id: doc.id,
+    docType: doc.docType,
+    versions: doc.versions.map((v) => ({
+      id: v.id,
+      version: v.version,
+      fileName: v.fileName,
+      uploadedAt: v.uploadedAt.toISOString(),
+      status: v.status as "CURRENT" | "PENDING_REVIEW" | "ARCHIVED" | "REJECTED",
+    })),
+    expiration: doc.expiration
+      ? {
+          expiresAt: doc.expiration.expiresAt.toISOString(),
+          isResolved: doc.expiration.isResolved,
+        }
+      : null,
+  }))
 
   return (
     <div className="space-y-6">
@@ -136,6 +183,9 @@ export default async function HireDetailPage({
       {/* Actions */}
       <HireActions hireId={hire.id} uploadUrl={uploadUrl} />
 
+      {/* Pending Approvals banner */}
+      <PendingApprovalsCard documents={serializedDocuments} />
+
       {/* Status timeline */}
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardContent className="p-6">
@@ -174,7 +224,7 @@ export default async function HireDetailPage({
         </CardContent>
       </Card>
 
-      {/* Progress */}
+      {/* Document Progress */}
       <Card className="rounded-2xl border-0 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-3">
@@ -194,41 +244,95 @@ export default async function HireDetailPage({
             {REQUIRED_DOC_TYPES.map((docType) => {
               const docInfo = DOCUMENT_TYPES[docType]
               const uploaded = hire.documents.find((d) => d.docType === docType)
+              const serialized = serializedDocuments.find(
+                (d) => d.docType === docType
+              )
+              const hasPending = serialized?.versions.some(
+                (v) => v.status === "PENDING_REVIEW"
+              )
+              const expiration = uploaded?.expiration
+              const isExpiringSoon =
+                expiration &&
+                !expiration.isResolved &&
+                new Date(expiration.expiresAt) <
+                  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
               return (
                 <div
                   key={docType}
-                  className={`flex items-center justify-between rounded-xl p-3 ${
-                    uploaded ? "bg-emerald-50/50" : "bg-muted/30"
+                  className={`rounded-xl p-3 ${
+                    hasPending
+                      ? "bg-amber-50/60 ring-1 ring-amber-200"
+                      : uploaded
+                      ? "bg-emerald-50/50"
+                      : "bg-muted/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    {uploaded ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
-                    )}
-                    <div>
-                      <p
-                        className={`text-sm font-medium ${
-                          uploaded ? "text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        {docInfo.label}
-                      </p>
-                      {uploaded && (
-                        <p className="text-xs text-muted-foreground">
-                          {uploaded.currentVersion?.fileName}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {uploaded ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p
+                          className={`text-sm font-medium ${
+                            uploaded
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {docInfo.label}
                         </p>
+                        {uploaded && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {uploaded.currentVersion?.fileName}
+                          </p>
+                        )}
+                        {expiration && !expiration.isResolved && (
+                          <p
+                            className={`text-xs flex items-center gap-1 mt-0.5 ${
+                              isExpiringSoon
+                                ? "text-amber-600"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {isExpiringSoon && (
+                              <AlertCircle className="h-3 w-3 shrink-0" />
+                            )}
+                            Expires{" "}
+                            {new Date(
+                              expiration.expiresAt
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {hasPending && (
+                        <Badge className="text-[10px] py-0 px-1.5 bg-amber-100 text-amber-800">
+                          Pending Review
+                        </Badge>
+                      )}
+                      {uploaded && (
+                        <a
+                          href={`/api/documents/${uploaded.id}/download`}
+                          className="text-[#136334] hover:text-[#136334]/80 transition-colors"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
                       )}
                     </div>
                   </div>
-                  {uploaded && (
-                    <a
-                      href={`/api/documents/${uploaded.id}/download`}
-                      className="text-[#136334] hover:text-[#136334]/80 transition-colors"
-                    >
-                      <Download className="h-4 w-4" />
-                    </a>
+
+                  {/* Version history expandable section */}
+                  {serialized && serialized.versions.length > 0 && (
+                    <DocumentVersionHistory document={serialized} canApprove={canApprove} />
                   )}
                 </div>
               )

@@ -2,17 +2,11 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
-import { Plus, FileText, ExternalLink } from "lucide-react"
+import { Plus, FileText } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-
-const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive"; className: string }> = {
-  PENDING: { label: "Pending", variant: "secondary", className: "bg-gray-100 text-gray-700 hover:bg-gray-100" },
-  IN_PROGRESS: { label: "In Progress", variant: "default", className: "bg-amber-100 text-amber-800 hover:bg-amber-100" },
-  COMPLETE: { label: "Complete", variant: "default", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" },
-  EXPIRED: { label: "Expired", variant: "destructive", className: "bg-red-100 text-red-800 hover:bg-red-100" },
-}
+import { checkFeatureAccess } from "@/lib/plans"
+import HiresList, { type SerializedHire } from "./hires-list"
 
 export default async function HiresPage() {
   const session = await auth()
@@ -23,10 +17,53 @@ export default async function HiresPage() {
   })
   if (!business) redirect("/signup")
 
-  const hires = await db.hire.findMany({
-    where: { businessId: business.id },
-    orderBy: { createdAt: "desc" },
+  const [hires, locations] = await Promise.all([
+    db.hire.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        documents: {
+          include: {
+            expiration: { select: { expiresAt: true, isResolved: true } },
+          },
+        },
+        location: { select: { id: true, name: true } },
+      },
+    }),
+    db.location.findMany({
+      where: { businessId: business.id },
+      select: { id: true, name: true },
+    }),
+  ])
+
+  const now = new Date()
+
+  const serializedHires: SerializedHire[] = hires.map((hire) => {
+    const uploadedDocTypes = hire.documents.map((d) => d.docType)
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const hasExpiringDocs = hire.documents.some(
+      (d) =>
+        d.expiration &&
+        !d.expiration.isResolved &&
+        d.expiration.expiresAt >= now &&
+        d.expiration.expiresAt <= thirtyDaysFromNow
+    )
+    return {
+      id: hire.id,
+      employeeName: hire.employeeName,
+      employeeEmail: hire.employeeEmail,
+      position: hire.position,
+      status: hire.status,
+      completionPct: hire.completionPct,
+      createdAt: hire.createdAt.toISOString(),
+      locationId: hire.location?.id ?? null,
+      locationName: hire.location?.name ?? null,
+      uploadedDocTypes,
+      hasExpiringDocs,
+    }
   })
+
+  const bulkDownloadEnabled = checkFeatureAccess(business.plan, "bulkDownload")
 
   return (
     <div className="space-y-6">
@@ -66,90 +103,12 @@ export default async function HiresPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="rounded-2xl border-0 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/30">
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">
-                    Employee Name
-                  </th>
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">
-                    Position
-                  </th>
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">
-                    Status
-                  </th>
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">
-                    Progress
-                  </th>
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">
-                    Date
-                  </th>
-                  <th className="text-left font-medium text-muted-foreground px-6 py-3">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {hires.map((hire) => {
-                  const cfg = statusConfig[hire.status] ?? statusConfig.PENDING
-                  return (
-                    <tr
-                      key={hire.id}
-                      className="border-b last:border-0 hover:bg-muted/20 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <Link
-                          href={`/hires/${hire.id}`}
-                          className="font-medium text-foreground hover:text-[#136334] transition-colors"
-                        >
-                          {hire.employeeName}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        {hire.position ?? "—"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={cfg.variant} className={cfg.className}>
-                          {cfg.label}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-16 rounded-full bg-secondary overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-[#136334] transition-all"
-                              style={{ width: `${hire.completionPct}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {hire.completionPct}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        {hire.createdAt.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Link href={`/hires/${hire.id}`}>
-                          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-[#136334]">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            View
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <HiresList
+          hires={serializedHires}
+          locations={locations}
+          bulkDownloadEnabled={bulkDownloadEnabled}
+          businessName={business.name}
+        />
       )}
     </div>
   )
