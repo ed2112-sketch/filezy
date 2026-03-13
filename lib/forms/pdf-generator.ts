@@ -88,45 +88,54 @@ async function generateW4PDF(options: GeneratePDFOptions): Promise<Blob> {
   if (pdfDoc) {
     try {
       const form = pdfDoc.getForm()
+
+      // Actual IRS W-4 2026 field names
       const fieldMap: Record<string, string> = {
-        // Common IRS W-4 2026 field names
-        "topmostSubform[0].Page1[0].f1_1[0]": options.formData["firstName"] ?? "",
-        "topmostSubform[0].Page1[0].f1_2[0]": options.formData["lastName"] ?? "",
-        "topmostSubform[0].Page1[0].f1_3[0]": options.formData["ssn"] ?? "",
-        "topmostSubform[0].Page1[0].f1_4[0]": options.formData["address"] ?? "",
-        "topmostSubform[0].Page1[0].f1_5[0]": options.formData["cityStateZip"] ?? "",
-        // Simpler field names used in some versions
-        "First name and middle initial": options.formData["firstName"] ?? "",
-        "Last name": options.formData["lastName"] ?? "",
-        "Social security number": options.formData["ssn"] ?? "",
-        "Address": options.formData["address"] ?? "",
-        "City or town state and ZIP code": options.formData["cityStateZip"] ?? "",
-        "Filing status": options.formData["filingStatus"] ?? "",
-        "Additional withholding": options.formData["additionalWithholding"] ?? "",
+        "topmostSubform[0].Page1[0].Step1a[0].f1_01[0]": options.formData["firstName"] ?? "",
+        "topmostSubform[0].Page1[0].Step1a[0].f1_02[0]": options.formData["lastName"] ?? "",
+        "topmostSubform[0].Page1[0].Step1a[0].f1_03[0]": options.formData["ssn"] ?? "",
+        "topmostSubform[0].Page1[0].Step1a[0].f1_04[0]": options.formData["address"] ?? "",
+        "topmostSubform[0].Page1[0].f1_05[0]": options.formData["cityStateZip"] ?? "",
+        "topmostSubform[0].Page1[0].f1_13[0]": options.formData["additionalWithholding"] ?? "",
       }
 
-      const fields = form.getFields()
-      for (const f of fields) {
-        const name = f.getName()
-        const val = fieldMap[name]
-        if (val !== undefined) {
+      // Set filing status checkbox
+      const filingStatus = options.formData["filingStatus"] ?? ""
+      const checkboxMap: Record<string, string> = {
+        "single": "topmostSubform[0].Page1[0].c1_1[0]",
+        "married": "topmostSubform[0].Page1[0].c1_1[1]",
+        "head_of_household": "topmostSubform[0].Page1[0].c1_1[2]",
+      }
+      const checkboxField = checkboxMap[filingStatus]
+      if (checkboxField) {
+        try {
+          const cb = form.getCheckBox(checkboxField)
+          cb.check()
+        } catch {
+          // skip
+        }
+      }
+
+      for (const [name, val] of Object.entries(fieldMap)) {
+        if (val) {
           try {
             const tf = form.getTextField(name)
             tf.setText(val)
           } catch {
-            // Field might be a different type — skip
+            // skip
           }
         }
       }
 
       form.flatten()
       const pages = pdfDoc.getPages()
-      const lastPage = pages[pages.length - 1]
-      const { height } = lastPage.getSize()
+      const firstPage = pages[0]
+      const { height } = firstPage.getSize()
 
       if (options.signature) {
-        await embedSignatureOnPage(pdfDoc, lastPage, options.signature, 72, height * 0.15, 220, 55)
-        await addAuditFooter(pdfDoc, lastPage, {
+        // Signature line on W-4 is near the bottom of page 1
+        await embedSignatureOnPage(pdfDoc, firstPage, options.signature, 72, height * 0.08, 220, 50)
+        await addAuditFooter(pdfDoc, firstPage, {
           signerName: options.employeeName,
           signedAt: formatDate(new Date().toISOString()),
           signatureType: options.signature.type,
@@ -162,26 +171,36 @@ async function generateI9PDF(options: GeneratePDFOptions): Promise<Blob> {
   if (pdfDoc) {
     try {
       const form = pdfDoc.getForm()
+
+      // Actual USCIS I-9 field names (Section 1 - Employee)
       const fieldMap: Record<string, string> = {
         "Last Name (Family Name)": options.formData["lastName"] ?? "",
-        "First Name (Given Name)": options.formData["firstName"] ?? "",
-        "Middle Initial": options.formData["middleInitial"] ?? "",
-        "Address (Street Number and Name)": options.formData["address"] ?? "",
-        "Apt. Number": options.formData["apt"] ?? "",
+        "First Name Given Name": options.formData["firstName"] ?? "",
+        "Employee Middle Initial (if any)": options.formData["middleInitial"] ?? "",
+        "Employee Other Last Names Used (if any)": options.formData["otherLastNames"] ?? "",
+        "Address Street Number and Name": options.formData["address"] ?? "",
+        "Apt Number (if any)": options.formData["apt"] ?? "",
         "City or Town": options.formData["city"] ?? "",
-        "State": options.formData["state"] ?? "",
         "ZIP Code": options.formData["zip"] ?? "",
-        "Date of Birth (mm/dd/yyyy)": options.formData["dob"] ?? "",
-        "U.S. Social Security Number": options.formData["ssn"] ?? "",
-        "Employee's E-mail Address": options.formData["email"] ?? "",
-        "Employee's Telephone Number": options.formData["phone"] ?? "",
+        "Date of Birth mmddyyyy": options.formData["dob"] ?? "",
+        "US Social Security Number": options.formData["ssn"] ?? "",
+        "Employees E-mail Address": options.formData["email"] ?? "",
+        "Telephone Number": options.formData["phone"] ?? "",
+        "Today's Date mmddyyy": formatDate(new Date().toISOString()),
       }
 
-      const fields = form.getFields()
-      for (const f of fields) {
-        const name = f.getName()
-        const val = fieldMap[name]
-        if (val !== undefined) {
+      // State is a dropdown
+      if (options.formData["state"]) {
+        try {
+          const dropdown = form.getDropdown("State")
+          dropdown.select(options.formData["state"])
+        } catch {
+          // skip
+        }
+      }
+
+      for (const [name, val] of Object.entries(fieldMap)) {
+        if (val) {
           try {
             const tf = form.getTextField(name)
             tf.setText(val)
@@ -193,12 +212,13 @@ async function generateI9PDF(options: GeneratePDFOptions): Promise<Blob> {
 
       form.flatten()
       const pages = pdfDoc.getPages()
-      const lastPage = pages[pages.length - 1]
-      const { height } = lastPage.getSize()
+      const firstPage = pages[0]
+      const { height } = firstPage.getSize()
 
       if (options.signature) {
-        await embedSignatureOnPage(pdfDoc, lastPage, options.signature, 72, height * 0.15, 220, 55)
-        await addAuditFooter(pdfDoc, lastPage, {
+        // Signature of Employee field is on page 1
+        await embedSignatureOnPage(pdfDoc, firstPage, options.signature, 72, height * 0.08, 220, 50)
+        await addAuditFooter(pdfDoc, firstPage, {
           signerName: options.employeeName,
           signedAt: formatDate(new Date().toISOString()),
           signatureType: options.signature.type,
