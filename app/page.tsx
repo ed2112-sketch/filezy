@@ -600,7 +600,7 @@ function Pricing() {
     {
       name: "Starter",
       price: "$3",
-      period: "/onboarding",
+      period: "/per",
       desc: "Pay as you go",
       features: ["All features included", "$3 per completed onboarding", "No monthly commitment", "Unlimited team members", "Cancel anytime"],
       cta: "Get started",
