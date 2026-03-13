@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { checkHireLimit } from "@/lib/plans"
 import { DEFAULT_TEMPLATES } from "@/lib/default-templates"
+import { getResend } from "@/lib/resend"
+import { render } from "@react-email/components"
+import EmployeeInvite from "@/emails/EmployeeInvite"
 import type { WorkflowType } from "@/lib/generated/prisma/client"
 
 export async function GET() {
@@ -104,6 +107,24 @@ export async function POST(request: NextRequest) {
   })
 
   const uploadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}`
+
+  // Send invite email if we have an email address (fire and forget)
+  const email = employeeEmail?.trim()
+  if (email) {
+    render(EmployeeInvite({
+      employeeName: employeeName.trim(),
+      businessName: business.name,
+      uploadUrl,
+      position: position?.trim() || undefined,
+    })).then((html) => {
+      getResend().emails.send({
+        from: `${business.name} via Filezy <noreply@filezy.com>`,
+        to: email,
+        subject: `${business.name} - Document upload request`,
+        html,
+      })
+    }).catch((err) => console.error("Invite email failed:", err))
+  }
 
   return NextResponse.json({ hire, uploadUrl }, { status: 201 })
 }
