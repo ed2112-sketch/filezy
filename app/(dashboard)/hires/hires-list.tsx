@@ -31,6 +31,7 @@ export type SerializedHire = {
   status: string
   completionPct: number
   createdAt: string
+  locationId: string | null
   locationName: string | null
   uploadedDocTypes: string[]
   hasExpiringDocs: boolean
@@ -72,7 +73,7 @@ export default function HiresList({ hires, locations, bulkDownloadEnabled }: Hir
 
     // Location filter
     if (locationFilter !== "all") {
-      result = result.filter((h) => h.locationName === locationFilter)
+      result = result.filter((h) => h.locationId === locationFilter)
     }
 
     // Missing doc type filter
@@ -166,7 +167,7 @@ export default function HiresList({ hires, locations, bulkDownloadEnabled }: Hir
         >
           <option value="all">All Locations</option>
           {locations.map((loc) => (
-            <option key={loc.id} value={loc.name}>
+            <option key={loc.id} value={loc.id}>
               {loc.name}
             </option>
           ))}

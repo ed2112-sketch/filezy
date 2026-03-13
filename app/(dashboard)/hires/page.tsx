@@ -27,7 +27,7 @@ export default async function HiresPage() {
             expiration: { select: { expiresAt: true, isResolved: true } },
           },
         },
-        location: { select: { name: true } },
+        location: { select: { id: true, name: true } },
       },
     }),
     db.location.findMany({
@@ -39,12 +39,14 @@ export default async function HiresPage() {
   const now = new Date()
 
   const serializedHires: SerializedHire[] = hires.map((hire) => {
-    const uploadedDocTypes = hire.documents.map((d) => d.type)
+    const uploadedDocTypes = hire.documents.map((d) => d.docType)
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
     const hasExpiringDocs = hire.documents.some(
       (d) =>
         d.expiration &&
         !d.expiration.isResolved &&
-        d.expiration.expiresAt <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+        d.expiration.expiresAt >= now &&
+        d.expiration.expiresAt <= thirtyDaysFromNow
     )
     return {
       id: hire.id,
@@ -54,6 +56,7 @@ export default async function HiresPage() {
       status: hire.status,
       completionPct: hire.completionPct,
       createdAt: hire.createdAt.toISOString(),
+      locationId: hire.location?.id ?? null,
       locationName: hire.location?.name ?? null,
       uploadedDocTypes,
       hasExpiringDocs,
