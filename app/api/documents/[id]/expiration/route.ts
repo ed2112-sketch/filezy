@@ -67,6 +67,13 @@ export async function POST(
     )
   }
 
+  // Check if an existing record has the same date to avoid resetting reminder timestamps on no-op saves
+  const existing = await db.documentExpiration.findUnique({
+    where: { documentId: id },
+  })
+
+  const dateChanged = !existing || existing.expiresAt.getTime() !== expiresAt.getTime()
+
   const expiration = await db.documentExpiration.upsert({
     where: { documentId: id },
     create: {
@@ -77,9 +84,11 @@ export async function POST(
     update: {
       expiresAt,
       isResolved: false,
-      reminder30SentAt: null,
-      reminder7SentAt: null,
-      expirationSentAt: null,
+      ...(dateChanged && {
+        reminder30SentAt: null,
+        reminder7SentAt: null,
+        expirationSentAt: null,
+      }),
     },
   })
 

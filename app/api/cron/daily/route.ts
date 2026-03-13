@@ -16,9 +16,17 @@ export async function GET(request: NextRequest) {
   const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
-  // Fetch all unresolved expirations with document → hire → business → owner
+  // Only fetch expirations that actually need an action today
   const expirations = await db.documentExpiration.findMany({
-    where: { isResolved: false },
+    where: {
+      isResolved: false,
+      expiresAt: { lte: in30Days },
+      OR: [
+        { expirationSentAt: null, expiresAt: { lte: now } },
+        { reminder7SentAt: null, expiresAt: { lte: in7Days, gt: now } },
+        { reminder30SentAt: null, expiresAt: { lte: in30Days, gt: now } },
+      ],
+    },
     include: {
       document: {
         include: {
