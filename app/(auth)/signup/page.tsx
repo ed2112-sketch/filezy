@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { FileText, Briefcase, Calculator, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -46,6 +46,7 @@ const WORKFLOW_OPTIONS: {
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<1 | 2>(1)
   const [name, setName] = useState("")
   const [businessName, setBusinessName] = useState("")
@@ -54,6 +55,12 @@ export default function SignupPage() {
   const [workflowType, setWorkflowType] = useState<WorkflowType>("EMPLOYER")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [referredByAccountantId, setReferredByAccountantId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const ref = searchParams.get("ref")
+    if (ref) setReferredByAccountantId(ref)
+  }, [searchParams])
 
   function handleContinue(e: React.FormEvent) {
     e.preventDefault()
@@ -81,7 +88,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, businessName, workflowType }),
+        body: JSON.stringify({ name, email, password, businessName, workflowType, referredByAccountantId }),
       })
 
       const data = await res.json()

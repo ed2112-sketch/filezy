@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
+import { getResend, FROM_EMAIL, FROM_NAME } from "@/lib/resend"
+import { render } from "@react-email/components"
+import AccountantOutreach1 from "@/emails/AccountantOutreach1"
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,8 +71,18 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // TODO: Send Email 1 immediately via Resend
-    // For now, just the record creation serves as the queue
+    // Send Email 1 immediately (fire and forget)
+    const businessName = outreach.triggeredByBusinessId
+      ? (await db.business.findUnique({ where: { id: outreach.triggeredByBusinessId }, select: { name: true } }))?.name ?? "A Filezy client"
+      : "A Filezy client"
+    render(AccountantOutreach1({ accountantEmail: email, businessName })).then((html) => {
+      getResend().emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: email,
+        subject: `${businessName} just used Filezy — and listed you as their accountant`,
+        html,
+      })
+    }).catch((err) => console.error("Accountant outreach email 1 failed:", err))
 
     return NextResponse.json(
       {

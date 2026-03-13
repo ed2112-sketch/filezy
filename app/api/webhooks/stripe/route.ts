@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
               accountant.activeReferralCount
             )
 
+            const isPaid = !!accountant.stripeConnectAccountId
+
             await db.commission.create({
               data: {
                 accountantId: accountant.id,
@@ -77,6 +79,8 @@ export async function POST(request: NextRequest) {
                 periodEnd: invoice.period_end
                   ? new Date(invoice.period_end * 1000)
                   : null,
+                status: isPaid ? "PAID" : "PENDING",
+                paidAt: isPaid ? new Date() : null,
               },
             })
 
@@ -90,6 +94,39 @@ export async function POST(request: NextRequest) {
             })
           }
         }
+        break
+      }
+
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session
+        if (session.mode !== "subscription") break
+
+        const customerId =
+          typeof session.customer === "string"
+            ? session.customer
+            : session.customer?.id
+
+        const subscriptionId =
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id
+
+        if (!customerId || !subscriptionId) break
+
+        const subscription = await getStripe().subscriptions.retrieve(subscriptionId)
+        const priceId = subscription.items.data[0]?.price?.id
+        const plan = priceId ? getPriceToPlan()[priceId] : undefined
+        const item = subscription.items.data[0]
+
+        await db.business.updateMany({
+          where: { stripeCustomerId: customerId },
+          data: {
+            stripeSubscriptionId: subscriptionId,
+            ...(plan ? { plan } : {}),
+            currentPeriodStart: item ? new Date(item.current_period_start * 1000) : undefined,
+            currentPeriodEnd: item ? new Date(item.current_period_end * 1000) : undefined,
+          },
+        })
         break
       }
 

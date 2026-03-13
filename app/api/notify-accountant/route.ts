@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getSignedDownloadUrl } from "@/lib/storage"
+import { getResend, FROM_EMAIL, FROM_NAME } from "@/lib/resend"
+import { render } from "@react-email/components"
+import AccountantNewDocs from "@/emails/AccountantNewDocs"
+import { DOCUMENT_TYPES } from "@/lib/documents"
 
 const TWENTY_FOUR_HOURS = 24 * 60 * 60
 
@@ -80,8 +84,26 @@ export async function POST(req: NextRequest) {
       data: { accountantNotifiedAt: new Date() },
     })
 
-    // TODO: Send email to accountant with document links via Resend
-    // For now, return the download links
+    // Send email to accountant with document links (fire and forget)
+    const accountant = hire.business.referredByAccountant
+    const emailDocLinks = documentLinks.map((doc) => ({
+      label: (DOCUMENT_TYPES[doc.docType as keyof typeof DOCUMENT_TYPES]?.label ?? doc.docType) + (doc.fileName ? ` — ${doc.fileName}` : ""),
+      url: doc.downloadUrl,
+    }))
+    render(AccountantNewDocs({
+      accountantName: accountant.name ?? undefined,
+      businessName: hire.business.name,
+      employeeName: hire.employeeName,
+      position: hire.position ?? undefined,
+      documentLinks: emailDocLinks,
+    })).then((html) => {
+      getResend().emails.send({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: accountant.email,
+        subject: `New hire documents ready — ${hire.employeeName} at ${hire.business.name}`,
+        html,
+      })
+    }).catch((err) => console.error("Notify accountant email failed:", err))
 
     return NextResponse.json({
       success: true,

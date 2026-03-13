@@ -15,6 +15,11 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+
   const business = await db.business.findUnique({
     where: { ownerId: session.user.id },
   })
@@ -22,8 +27,20 @@ export async function GET() {
     return NextResponse.json({ error: "No business found" }, { status: 404 })
   }
 
+  // For VIEWER role, filter hires to only those in the user's assigned locations
+  let locationFilter: { locationId: { in: string[] } } | undefined
+  if (user?.role === "VIEWER") {
+    const userLocations = await db.userLocation.findMany({
+      where: { userId: session.user.id },
+      select: { locationId: true },
+    })
+    if (userLocations.length > 0) {
+      locationFilter = { locationId: { in: userLocations.map((ul) => ul.locationId) } }
+    }
+  }
+
   const hires = await db.hire.findMany({
-    where: { businessId: business.id },
+    where: { businessId: business.id, ...locationFilter },
     orderBy: { createdAt: "desc" },
     include: { documents: true },
   })
@@ -69,15 +86,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No business found" }, { status: 404 })
   }
 
-  // Check plan limits
-  const withinLimit = await checkHireLimit(business.id, business.plan)
-  if (!withinLimit) {
-    return NextResponse.json(
-      {
-        error:
-          "You've reached your plan's hire limit. Please upgrade to add more hires.",
-      },
-      { status: 403 }
+  // Check plan limits (informational only — hire creation is never blocked here;
+  // overage billing for GROWTH/PRO is handled by the Stripe invoice.created webhook,
+  // and STARTER is pay-per-use so every hire is billed individually).
+  const limitInfo = await checkHireLimit(business.id, business.plan)
+  if (limitInfo.isOverage) {
+    console.info(
+      `[hire-limit] Business ${business.id} (${limitInfo.plan}) is over included quota: ` +
+        `${limitInfo.currentUsage}/${limitInfo.includedOnboardings} used. ` +
+        `Overage rate: $${(limitInfo.overagePriceCents / 100).toFixed(2)}/hire.`
     )
   }
 

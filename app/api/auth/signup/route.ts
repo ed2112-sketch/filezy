@@ -7,7 +7,7 @@ import { WorkflowType } from "@/lib/generated/prisma/client"
 const VALID_WORKFLOW_TYPES: WorkflowType[] = ["EMPLOYER", "ACCOUNTANT", "STAFFING_AGENCY"]
 
 export async function POST(req: NextRequest) {
-  const { name, email, password, businessName, workflowType = "EMPLOYER" } = await req.json()
+  const { name, email, password, businessName, workflowType = "EMPLOYER", referredByAccountantId } = await req.json()
 
   if (!email || !password || !name || !businessName) {
     return Response.json({ error: "Missing required fields" }, { status: 400 })
@@ -20,6 +20,17 @@ export async function POST(req: NextRequest) {
   const existing = await db.user.findUnique({ where: { email } })
   if (existing) {
     return Response.json({ error: "Email already registered" }, { status: 409 })
+  }
+
+  // Validate referral accountant if provided
+  let resolvedReferralAccountantId: string | null = null
+  if (referredByAccountantId) {
+    const referralAccountant = await db.accountant.findUnique({
+      where: { id: referredByAccountantId },
+    })
+    if (referralAccountant) {
+      resolvedReferralAccountantId = referralAccountant.id
+    }
   }
 
   const passwordHash = await bcrypt.hash(password, 12)
@@ -39,6 +50,7 @@ export async function POST(req: NextRequest) {
         name: businessName,
         ownerId: user.id,
         workflowType: workflowType as WorkflowType,
+        referredByAccountantId: resolvedReferralAccountantId,
       },
     })
 
@@ -67,6 +79,19 @@ export async function POST(req: NextRequest) {
       where: { id: business.id },
       data: { defaultRoleTemplateId: roleTemplate.id },
     })
+
+    // Increment referral counters if this business was referred
+    if (resolvedReferralAccountantId) {
+      await tx.accountant.update({
+        where: { id: resolvedReferralAccountantId },
+        data: { activeReferralCount: { increment: 1 } },
+      })
+
+      await tx.referralLink.updateMany({
+        where: { accountantId: resolvedReferralAccountantId },
+        data: { conversions: { increment: 1 } },
+      })
+    }
 
     return { user, business }
   })

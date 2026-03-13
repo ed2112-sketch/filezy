@@ -1,14 +1,13 @@
 import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { checkHireLimit } from "@/lib/plans"
 import { getResend } from "@/lib/resend"
 import { DEFAULT_TEMPLATES } from "@/lib/default-templates"
+import { render } from "@react-email/components"
+import EmployeeInvite from "@/emails/EmployeeInvite"
 import type { WorkflowType } from "@/lib/generated/prisma/client"
 import { logAudit, extractRequestInfo } from "@/lib/audit"
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
 
 function parseCSVLine(line: string): string[] {
   const fields: string[] = []
@@ -49,13 +48,25 @@ export async function POST(req: NextRequest) {
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     include: {
-      ownedBusiness: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true, workflowType: true } },
-      business: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true, workflowType: true } },
+      ownedBusiness: { select: { id: true, name: true, plan: true, accountantEmail: true, brandLogoUrl: true, workflowType: true } },
+      business: { select: { id: true, name: true, plan: true, accountantEmail: true, brandLogoUrl: true, workflowType: true } },
     },
   })
   const business = user?.ownedBusiness ?? user?.business
   if (!business) {
     return Response.json({ error: "No business found" }, { status: 404 })
+  }
+
+  // Check plan limits (informational only — bulk hire creation is never blocked here;
+  // overage billing for GROWTH/PRO is handled by the Stripe invoice.created webhook,
+  // and STARTER is pay-per-use so every hire is billed individually).
+  const limitInfo = await checkHireLimit(business.id, business.plan)
+  if (limitInfo.isOverage) {
+    console.info(
+      `[hire-limit] Business ${business.id} (${limitInfo.plan}) is over included quota before bulk invite: ` +
+        `${limitInfo.currentUsage}/${limitInfo.includedOnboardings} used. ` +
+        `Overage rate: $${(limitInfo.overagePriceCents / 100).toFixed(2)}/hire.`
+    )
   }
 
   const formData = await req.formData()
@@ -160,14 +171,19 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error("Audit log failed for hire", hire.id, err))
 
       // Send invite email (fire and forget)
-      const logoHtml = business.brandLogoUrl
-        ? `<img src="${business.brandLogoUrl}" alt="${business.name}" style="max-height: 40px; max-width: 200px; object-fit: contain;" />`
-        : `<strong>${business.name}</strong>`
-      getResend().emails.send({
-        from: `${business.name} via Filezy <noreply@filezy.com>`,
-        to: email,
-        subject: `${business.name} — Document upload request`,
-        html: `<div style="margin-bottom: 16px;">${logoHtml}</div><p>Hi ${escapeHtml(name)},</p><p>${escapeHtml(business.name)} has requested documents from you. Please use the link below to upload them.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}">Upload your documents</a></p><p>If you have questions, contact ${escapeHtml(business.name)} directly.</p>`,
+      const uploadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}`
+      render(EmployeeInvite({
+        employeeName: name,
+        businessName: business.name,
+        uploadUrl,
+        position: position || undefined,
+      })).then((html) => {
+        getResend().emails.send({
+          from: `${business.name} via Filezy <noreply@filezy.com>`,
+          to: email,
+          subject: `${business.name} - Document upload request`,
+          html,
+        })
       }).catch(err => console.error("Bulk invite email failed for", email, err))
     } catch {
       results.failed.push({ row: i + 1, reason: "Failed to create record" })
