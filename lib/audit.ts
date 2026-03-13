@@ -24,7 +24,7 @@ export async function logAudit(entry: AuditLogEntry) {
       actorId: entry.actorId,
       ip: entry.ip,
       userAgent: entry.userAgent,
-      metadata: entry.metadata ?? undefined,
+      metadata: entry.metadata ? (entry.metadata as object) : undefined,
     },
   })
 }

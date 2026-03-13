@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     include: { ownedBusiness: true, business: true },
   })
   const business = user?.ownedBusiness ?? user?.business
-  if (!business) {
+  if (!business || !user) {
     return NextResponse.json({ error: "Business not found" }, { status: 404 })
   }
 

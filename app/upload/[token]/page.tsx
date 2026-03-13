@@ -286,7 +286,7 @@ export default function UploadPage() {
               description={doc.description}
               instructions={doc.instructions}
               uploaded={!!uploaded}
-              uploadedFileName={uploaded?.fileName}
+              uploadedFileName={uploaded?.fileName ?? undefined}
               isUploading={isUploading}
               wasJustUploaded={wasJustUploaded}
               onFileSelect={(file) => handleUpload(docType, file)}

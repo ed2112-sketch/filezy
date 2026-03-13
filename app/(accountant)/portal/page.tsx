@@ -27,7 +27,7 @@ export default async function AccountantClientsPage() {
             orderBy: { createdAt: "desc" },
             take: 3,
             include: {
-              documents: { select: { id: true, reviewed: true } },
+              documents: { select: { id: true, currentVersion: { select: { reviewedAt: true } } } },
             },
           },
           _count: { select: { hires: true } },
@@ -174,7 +174,7 @@ export default async function AccountantClientsPage() {
                       {business.hires.map((hire) => {
                         const totalDocs = hire.documents.length
                         const reviewedDocs = hire.documents.filter(
-                          (d) => d.reviewed
+                          (d) => d.currentVersion?.reviewedAt != null
                         ).length
                         return (
                           <div

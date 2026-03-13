@@ -16,7 +16,7 @@ export default async function DashboardLayout({
     include: { ownedBusiness: true, business: true },
   })
   const business = user?.ownedBusiness ?? user?.business
-  if (!business) redirect("/signup")
+  if (!business || !user) redirect("/signup")
 
   return (
     <DashboardShell
