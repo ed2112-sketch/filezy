@@ -6,6 +6,7 @@ import { render } from "@react-email/components"
 import EmployeeInvite from "@/emails/EmployeeInvite"
 import AccountantNewDocs from "@/emails/AccountantNewDocs"
 import { DOCUMENT_TYPES } from "@/lib/documents"
+import { logAudit, extractRequestInfo } from "@/lib/audit"
 
 export async function GET(
   request: NextRequest,
@@ -173,4 +174,48 @@ export async function PATCH(
   })
 
   return NextResponse.json(updated)
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const business = await db.business.findUnique({
+    where: { ownerId: session.user.id },
+  })
+  if (!business) {
+    return NextResponse.json({ error: "No business found" }, { status: 404 })
+  }
+
+  const hire = await db.hire.findUnique({
+    where: { id },
+  })
+
+  if (!hire || hire.businessId !== business.id) {
+    return NextResponse.json({ error: "Hire not found" }, { status: 404 })
+  }
+
+  await db.hire.delete({
+    where: { id },
+  })
+
+  const { ip, userAgent } = extractRequestInfo(request)
+  await logAudit({
+    businessId: business.id,
+    hireId: id,
+    action: "HIRE_DELETED",
+    actorType: "ADMIN",
+    actorId: session.user.id,
+    ip,
+    userAgent,
+    metadata: { employeeName: hire.employeeName },
+  })
+
+  return NextResponse.json({ success: true })
 }

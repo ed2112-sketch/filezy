@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { PLAN_LIMITS } from "@/lib/plans"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 export async function GET() {
   const session = await auth()
@@ -81,4 +81,99 @@ export async function POST(request: Request) {
   })
 
   return NextResponse.json({ location }, { status: 201 })
+}
+
+export async function PATCH(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: { ownedBusiness: true, business: true },
+  })
+  const business = user?.ownedBusiness ?? user?.business
+  if (!business || !user) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
+  }
+
+  if (user.role === "VIEWER") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { id, name, address, stateEIN, isActive, isDefault } = body
+
+  if (!id) {
+    return NextResponse.json({ error: "Location id is required" }, { status: 400 })
+  }
+
+  // Verify the location belongs to this business
+  const existing = await db.location.findUnique({ where: { id } })
+  if (!existing || existing.businessId !== business.id) {
+    return NextResponse.json({ error: "Location not found" }, { status: 404 })
+  }
+
+  // If setting this location as default, unset isDefault on all other locations first
+  if (isDefault === true) {
+    await db.location.updateMany({
+      where: { businessId: business.id, id: { not: id } },
+      data: { isDefault: false },
+    })
+  }
+
+  const location = await db.location.update({
+    where: { id },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(address !== undefined && { address }),
+      ...(stateEIN !== undefined && { stateEIN }),
+      ...(isActive !== undefined && { isActive }),
+      ...(isDefault !== undefined && { isDefault }),
+    },
+  })
+
+  return NextResponse.json({ location })
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: { ownedBusiness: true, business: true },
+  })
+  const business = user?.ownedBusiness ?? user?.business
+  if (!business || !user) {
+    return NextResponse.json({ error: "Business not found" }, { status: 404 })
+  }
+
+  if (user.role === "VIEWER") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { id } = body
+
+  if (!id) {
+    return NextResponse.json({ error: "Location id is required" }, { status: 400 })
+  }
+
+  // Verify the location belongs to this business
+  const existing = await db.location.findUnique({ where: { id } })
+  if (!existing || existing.businessId !== business.id) {
+    return NextResponse.json({ error: "Location not found" }, { status: 404 })
+  }
+
+  // Soft-delete: set isActive=false to preserve hire references
+  const location = await db.location.update({
+    where: { id },
+    data: { isActive: false },
+  })
+
+  return NextResponse.json({ location })
 }

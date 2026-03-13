@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { getResend } from "@/lib/resend"
 import { DEFAULT_TEMPLATES } from "@/lib/default-templates"
 import type { WorkflowType } from "@/lib/generated/prisma/client"
+import { logAudit, extractRequestInfo } from "@/lib/audit"
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -145,6 +146,18 @@ export async function POST(req: NextRequest) {
 
       existingEmails.add(email)
       results.created++
+
+      const { ip, userAgent } = extractRequestInfo(req)
+      logAudit({
+        businessId: business.id,
+        hireId: hire.id,
+        action: "HIRE_CREATED",
+        actorType: "ADMIN",
+        actorId: session.user.id,
+        ip,
+        userAgent,
+        metadata: { employeeName: name, position: position || undefined, source: "bulk-invite" },
+      }).catch(err => console.error("Audit log failed for hire", hire.id, err))
 
       // Send invite email (fire and forget)
       const logoHtml = business.brandLogoUrl

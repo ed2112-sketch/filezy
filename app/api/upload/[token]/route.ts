@@ -4,6 +4,7 @@ import { uploadFile, buildFilePath } from "@/lib/storage"
 import { calculateCompletionPct } from "@/lib/documents"
 import { UploaderType, DocumentVersionStatus } from "@/lib/generated/prisma/client"
 import { recordOnboardingUsage } from "@/lib/usage-tracking"
+import { logAudit, extractRequestInfo } from "@/lib/audit"
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 const ALLOWED_TYPES = [
@@ -223,6 +224,18 @@ export async function POST(
   if (isComplete) {
     await recordOnboardingUsage(hire.id, hire.businessId)
   }
+
+  const { ip, userAgent } = extractRequestInfo(req)
+  await logAudit({
+    businessId: hire.businessId,
+    hireId: hire.id,
+    documentId: document.id,
+    action: "UPLOADED",
+    actorType: "EMPLOYEE",
+    ip,
+    userAgent,
+    metadata: { docType, fileName: file.name, fileSize: file.size, versionId: newVersion.id },
+  })
 
   return Response.json({
     success: true,

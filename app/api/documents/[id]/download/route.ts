@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getSignedDownloadUrl } from "@/lib/storage"
+import { logAudit, extractRequestInfo } from "@/lib/audit"
 
 export async function GET(
   _req: NextRequest,
@@ -40,6 +41,18 @@ export async function GET(
   }
 
   const url = await getSignedDownloadUrl(document.currentVersion.filePath, 3600)
+
+  const { ip, userAgent } = extractRequestInfo(_req)
+  await logAudit({
+    businessId: document.hire.businessId,
+    hireId: document.hireId,
+    documentId: document.id,
+    action: "DOWNLOADED",
+    actorType: "ADMIN",
+    actorId: session.user.id,
+    ip,
+    userAgent,
+  })
 
   return Response.redirect(url, 302)
 }

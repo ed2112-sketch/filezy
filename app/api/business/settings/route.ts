@@ -41,7 +41,21 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, state, accountantName, accountantEmail, brandPrimaryColor, brandAccentColor } = body
+  const {
+    name,
+    state,
+    accountantName,
+    accountantEmail,
+    brandPrimaryColor,
+    brandAccentColor,
+    selfOnboardingEnabled,
+    selfOnboardingSlug,
+    smsEnabled,
+    reminderDay1,
+    reminderDay2,
+    reminderDay3,
+    defaultRoleTemplateId,
+  } = body
 
   if (name !== undefined && (!name || typeof name !== "string")) {
     return NextResponse.json(
@@ -66,6 +80,36 @@ export async function PATCH(request: NextRequest) {
     )
   }
 
+  const urlSafeSlugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+  if (selfOnboardingSlug !== undefined && selfOnboardingSlug !== null && selfOnboardingSlug !== "" && !urlSafeSlugRegex.test(selfOnboardingSlug)) {
+    return NextResponse.json(
+      { error: "Invalid self-onboarding slug. Use only lowercase letters, numbers, and hyphens (e.g. my-business)." },
+      { status: 400 }
+    )
+  }
+
+  if (reminderDay1 !== undefined && (!Number.isInteger(reminderDay1) || reminderDay1 < 1)) {
+    return NextResponse.json(
+      { error: "reminderDay1 must be a positive integer." },
+      { status: 400 }
+    )
+  }
+
+  if (reminderDay2 !== undefined && (!Number.isInteger(reminderDay2) || reminderDay2 < 1)) {
+    return NextResponse.json(
+      { error: "reminderDay2 must be a positive integer." },
+      { status: 400 }
+    )
+  }
+
+  if (reminderDay3 !== undefined && (!Number.isInteger(reminderDay3) || reminderDay3 < 1)) {
+    return NextResponse.json(
+      { error: "reminderDay3 must be a positive integer." },
+      { status: 400 }
+    )
+  }
+
   const updated = await db.business.update({
     where: { id: business.id },
     data: {
@@ -83,6 +127,21 @@ export async function PATCH(request: NextRequest) {
       ...(brandAccentColor !== undefined && {
         brandAccentColor: brandAccentColor || null,
       }),
+      ...(selfOnboardingEnabled !== undefined && {
+        selfOnboardingEnabled: Boolean(selfOnboardingEnabled),
+      }),
+      ...(selfOnboardingSlug !== undefined && {
+        selfOnboardingSlug: selfOnboardingSlug || null,
+      }),
+      ...(smsEnabled !== undefined && {
+        smsEnabled: Boolean(smsEnabled),
+      }),
+      ...(reminderDay1 !== undefined && { reminderDay1 }),
+      ...(reminderDay2 !== undefined && { reminderDay2 }),
+      ...(reminderDay3 !== undefined && { reminderDay3 }),
+      ...(defaultRoleTemplateId !== undefined && {
+        defaultRoleTemplateId: defaultRoleTemplateId || null,
+      }),
     },
   })
 
@@ -95,5 +154,12 @@ export async function PATCH(request: NextRequest) {
     brandLogoUrl: updated.brandLogoUrl,
     brandPrimaryColor: updated.brandPrimaryColor,
     brandAccentColor: updated.brandAccentColor,
+    selfOnboardingEnabled: updated.selfOnboardingEnabled,
+    selfOnboardingSlug: updated.selfOnboardingSlug,
+    smsEnabled: updated.smsEnabled,
+    reminderDay1: updated.reminderDay1,
+    reminderDay2: updated.reminderDay2,
+    reminderDay3: updated.reminderDay3,
+    defaultRoleTemplateId: updated.defaultRoleTemplateId,
   })
 }

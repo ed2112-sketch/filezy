@@ -7,6 +7,7 @@ import { getResend } from "@/lib/resend"
 import { render } from "@react-email/components"
 import EmployeeInvite from "@/emails/EmployeeInvite"
 import type { WorkflowType } from "@/lib/generated/prisma/client"
+import { logAudit, extractRequestInfo } from "@/lib/audit"
 
 export async function GET() {
   const session = await auth()
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { employeeName, employeeEmail, employeePhone, position, startDate, roleTemplateId } =
+  const { employeeName, employeeEmail, employeePhone, position, startDate, roleTemplateId, locationId } =
     body
 
   if (!employeeName || typeof employeeName !== "string") {
@@ -102,11 +103,24 @@ export async function POST(request: NextRequest) {
       position: position?.trim() || null,
       startDate: startDate ? new Date(startDate) : null,
       roleTemplateId: roleTemplateId || null,
+      locationId: locationId || null,
       requiredDocTypes,
     },
   })
 
   const uploadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}`
+
+  const { ip, userAgent } = extractRequestInfo(request)
+  await logAudit({
+    businessId: business.id,
+    hireId: hire.id,
+    action: "HIRE_CREATED",
+    actorType: "ADMIN",
+    actorId: session.user.id,
+    ip,
+    userAgent,
+    metadata: { employeeName: hire.employeeName, position: hire.position ?? undefined },
+  })
 
   // Send invite email if we have an email address (fire and forget)
   const email = employeeEmail?.trim()
