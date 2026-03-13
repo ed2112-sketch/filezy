@@ -16,16 +16,14 @@ export type GeneratePDFOptions = {
 export async function generateSignedPDF(options: GeneratePDFOptions): Promise<Blob> {
   const { docType } = options
 
-  switch (docType) {
-    case "w4":
+  switch (docType.toUpperCase()) {
+    case "W4":
       return generateW4PDF(options)
-    case "i9":
+    case "I9":
       return generateI9PDF(options)
-    case "direct_deposit":
-    case "directDeposit":
+    case "DIRECT_DEPOSIT":
       return generateDirectDepositPDF(options)
-    case "offer_letter":
-    case "offerLetter":
+    case "OFFER_LETTER":
       return generateOfferLetterPDF(options)
     default:
       return generateGenericPDF(options)
