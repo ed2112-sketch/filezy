@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DOCUMENT_TYPES } from "@/lib/documents"
+import { getWorkflowLabels } from "@/lib/workflow-labels"
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive"; className: string }> = {
   PENDING: { label: "Pending", variant: "secondary", className: "bg-gray-100 text-gray-700 hover:bg-gray-100" },
@@ -21,8 +22,15 @@ export default async function DashboardPage() {
 
   const business = await db.business.findUnique({
     where: { ownerId: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      workflowType: true,
+    },
   })
   if (!business) redirect("/signup")
+
+  const labels = getWorkflowLabels(business.workflowType)
 
   const now = new Date()
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -66,7 +74,7 @@ export default async function DashboardPage() {
 
   const stats = [
     {
-      label: "Total Hires",
+      label: `Total ${labels.hires}`,
       value: totalHires,
       icon: Users,
       color: "text-[#136334]",
@@ -101,7 +109,7 @@ export default async function DashboardPage() {
         <Link href="/hires/new">
           <Button className="gap-2 bg-[#136334] hover:bg-[#136334]/90">
             <Plus className="h-4 w-4" />
-            Add New Hire
+            {labels.addHire}
           </Button>
         </Link>
       </div>
@@ -191,7 +199,7 @@ export default async function DashboardPage() {
       {/* Recent hires */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Recent Hires</h2>
+          <h2 className="text-lg font-semibold">Recent {labels.hires}</h2>
           {totalHires > 5 && (
             <Link href="/hires">
               <Button variant="ghost" size="sm" className="text-muted-foreground">
@@ -207,15 +215,15 @@ export default async function DashboardPage() {
               <div className="h-16 w-16 rounded-2xl bg-[#136334]/10 flex items-center justify-center mb-4">
                 <FileText className="h-8 w-8 text-[#136334]" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">No hires yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No {labels.hires.toLowerCase()} yet</h3>
               <p className="text-muted-foreground mb-6 max-w-sm">
-                Add your first new hire to start collecting their paperwork
+                Add your first {labels.hire.toLowerCase()} to start collecting their paperwork
                 automatically.
               </p>
               <Link href="/hires/new">
                 <Button className="gap-2 bg-[#136334] hover:bg-[#136334]/90">
                   <Plus className="h-4 w-4" />
-                  Add your first hire
+                  {labels.addHire}
                 </Button>
               </Link>
             </CardContent>

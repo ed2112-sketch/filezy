@@ -20,27 +20,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const allNavLinks = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/hires", label: "Hires", icon: Users },
-  { href: "/settings", label: "Settings", icon: Settings, ownerAdminOnly: true },
-]
-
 export function DashboardShell({
   children,
   userName,
   userEmail,
   userImage,
   user,
+  hiresLabel = "Hires",
 }: {
   children: React.ReactNode
   userName: string
   userEmail: string
   userImage?: string
   user?: { name?: string | null; email?: string | null; image?: string | null; role?: string }
+  hiresLabel?: string
 }) {
   const pathname = usePathname()
   const role = user?.role ?? "OWNER"
+
+  const allNavLinks = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/hires", label: hiresLabel, icon: Users },
+    { href: "/settings", label: "Settings", icon: Settings, ownerAdminOnly: true },
+  ]
+
   const navLinks = allNavLinks.filter(
     (link) => !link.ownerAdminOnly || role !== "VIEWER"
   )

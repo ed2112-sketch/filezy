@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import type { WorkflowLabels } from "@/lib/workflow-labels"
 
 const statusConfig: Record<string, { label: string; variant: "secondary" | "default" | "destructive"; className: string }> = {
   PENDING: { label: "Pending", variant: "secondary", className: "bg-gray-100 text-gray-700 hover:bg-gray-100" },
@@ -42,9 +43,10 @@ type HiresListProps = {
   locations: { id: string; name: string }[]
   bulkDownloadEnabled: boolean
   businessName: string
+  labels: WorkflowLabels
 }
 
-export default function HiresList({ hires, locations, bulkDownloadEnabled }: HiresListProps) {
+export default function HiresList({ hires, locations, bulkDownloadEnabled, labels }: HiresListProps) {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [locationFilter, setLocationFilter] = useState("all")
@@ -144,7 +146,7 @@ export default function HiresList({ hires, locations, bulkDownloadEnabled }: Hir
       {/* Search & Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Input
-          placeholder="Search by name, email, or position…"
+          placeholder={`Search ${labels.hires.toLowerCase()}...`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:max-w-xs"
@@ -201,10 +203,10 @@ export default function HiresList({ hires, locations, bulkDownloadEnabled }: Hir
                   />
                 </th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">
-                  Employee Name
+                  {labels.employee} Name
                 </th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">
-                  Position
+                  {labels.position}
                 </th>
                 <th className="text-left font-medium text-muted-foreground px-4 py-3">
                   Status
@@ -224,7 +226,7 @@ export default function HiresList({ hires, locations, bulkDownloadEnabled }: Hir
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-10 text-center text-muted-foreground">
-                    No hires match your filters.
+                    No {labels.hires.toLowerCase()} match your filters.
                   </td>
                 </tr>
               ) : (

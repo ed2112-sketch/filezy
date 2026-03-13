@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { checkFeatureAccess } from "@/lib/plans"
 import HiresList, { type SerializedHire } from "./hires-list"
+import { getWorkflowLabels } from "@/lib/workflow-labels"
 
 export default async function HiresPage() {
   const session = await auth()
@@ -14,8 +15,16 @@ export default async function HiresPage() {
 
   const business = await db.business.findUnique({
     where: { ownerId: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      plan: true,
+      workflowType: true,
+    },
   })
   if (!business) redirect("/signup")
+
+  const labels = getWorkflowLabels(business.workflowType)
 
   const [hires, locations] = await Promise.all([
     db.hire.findMany({
@@ -70,7 +79,7 @@ export default async function HiresPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Hires</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{labels.hires}</h1>
           <p className="text-muted-foreground mt-1">
             Manage new hire paperwork for {business.name}
           </p>
@@ -78,7 +87,7 @@ export default async function HiresPage() {
         <Link href="/hires/new">
           <Button className="gap-2 bg-[#136334] hover:bg-[#136334]/90">
             <Plus className="h-4 w-4" />
-            Add New Hire
+            {labels.addHire}
           </Button>
         </Link>
       </div>
@@ -89,7 +98,7 @@ export default async function HiresPage() {
             <div className="h-16 w-16 rounded-2xl bg-[#136334]/10 flex items-center justify-center mb-4">
               <FileText className="h-8 w-8 text-[#136334]" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No hires yet</h3>
+            <h3 className="text-lg font-semibold mb-2">No {labels.hires.toLowerCase()} yet</h3>
             <p className="text-muted-foreground mb-6 max-w-sm">
               Add your first new hire to start collecting their documents
               automatically.
@@ -97,7 +106,7 @@ export default async function HiresPage() {
             <Link href="/hires/new">
               <Button className="gap-2 bg-[#136334] hover:bg-[#136334]/90">
                 <Plus className="h-4 w-4" />
-                Add your first hire
+                {labels.addHire}
               </Button>
             </Link>
           </CardContent>
@@ -108,6 +117,7 @@ export default async function HiresPage() {
           locations={locations}
           bulkDownloadEnabled={bulkDownloadEnabled}
           businessName={business.name}
+          labels={labels}
         />
       )}
     </div>
