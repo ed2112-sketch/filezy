@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getResend } from "@/lib/resend"
+import { render } from "@react-email/components"
+import EmployeeInvite from "@/emails/EmployeeInvite"
+import AccountantNewDocs from "@/emails/AccountantNewDocs"
+import { DOCUMENT_TYPES } from "@/lib/documents"
 
 export async function GET(
   request: NextRequest,
@@ -60,7 +65,28 @@ export async function PATCH(
 
   // Handle special actions
   if (body.action === "resend_invite") {
-    // TODO: Send email/SMS to employee with upload link
+    if (!hire.employeeEmail) {
+      return NextResponse.json(
+        { error: "No email address on file for this person." },
+        { status: 400 }
+      )
+    }
+
+    const uploadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}`
+    const html = await render(EmployeeInvite({
+      employeeName: hire.employeeName,
+      businessName: business.name,
+      uploadUrl,
+      position: hire.position ?? undefined,
+    }))
+
+    await getResend().emails.send({
+      from: `${business.name} via Filezy <noreply@filezy.com>`,
+      to: hire.employeeEmail,
+      subject: `${business.name} - Document upload request`,
+      html,
+    })
+
     return NextResponse.json({ success: true, message: "Invite resent" })
   }
 
@@ -72,7 +98,39 @@ export async function PATCH(
       )
     }
 
-    // TODO: Send email to accountant with completed documents
+    const hireWithDocs = await db.hire.findUnique({
+      where: { id },
+      include: {
+        documents: {
+          where: { currentVersionId: { not: null } },
+          select: { docType: true, id: true },
+        },
+      },
+    })
+
+    const documentLinks = (hireWithDocs?.documents ?? []).map((d) => {
+      const docTypeKey = d.docType as keyof typeof DOCUMENT_TYPES
+      return {
+        label: DOCUMENT_TYPES[docTypeKey]?.label ?? d.docType,
+        url: `${process.env.NEXT_PUBLIC_APP_URL}/api/documents/${d.id}/download`,
+      }
+    })
+
+    const html = await render(AccountantNewDocs({
+      accountantName: business.accountantName ?? undefined,
+      businessName: business.name,
+      employeeName: hire.employeeName,
+      position: hire.position ?? undefined,
+      documentLinks,
+    }))
+
+    await getResend().emails.send({
+      from: `${business.name} via Filezy <noreply@filezy.com>`,
+      to: business.accountantEmail,
+      subject: `New hire documents ready - ${hire.employeeName} at ${business.name}`,
+      html,
+    })
+
     await db.hire.update({
       where: { id },
       data: { accountantNotifiedAt: new Date() },

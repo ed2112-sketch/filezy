@@ -175,8 +175,10 @@ export const DOCUMENT_TYPES = {
   },
 } as const
 
-export function calculateCompletionPct(uploadedDocTypes: string[]): number {
+export function calculateCompletionPct(uploadedDocTypes: string[], requiredDocTypes?: string[]): number {
+  const required = requiredDocTypes && requiredDocTypes.length > 0 ? requiredDocTypes : [...REQUIRED_DOC_TYPES]
+  if (required.length === 0) return 100
   const uploaded = new Set(uploadedDocTypes)
-  const count = REQUIRED_DOC_TYPES.filter((t) => uploaded.has(t)).length
-  return Math.round((count / REQUIRED_DOC_TYPES.length) * 100)
+  const count = required.filter((t) => uploaded.has(t)).length
+  return Math.round((count / required.length) * 100)
 }

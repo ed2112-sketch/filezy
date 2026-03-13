@@ -17,9 +17,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No business found" }, { status: 404 })
   }
 
-  const { priceId } = await request.json()
-  if (!priceId || typeof priceId !== "string") {
-    return NextResponse.json({ error: "priceId is required" }, { status: 400 })
+  const { plan } = await request.json()
+
+  // STARTER is free - just downgrade
+  if (plan === "STARTER") {
+    // Cancel existing subscription if any
+    if (business.stripeSubscriptionId) {
+      await getStripe().subscriptions.cancel(business.stripeSubscriptionId)
+    }
+    await db.business.update({
+      where: { id: business.id },
+      data: { plan: "STARTER", stripeSubscriptionId: null },
+    })
+    return NextResponse.json({ success: true })
+  }
+
+  // GROWTH and PRO need Stripe subscriptions
+  const priceId = plan === "GROWTH"
+    ? process.env.STRIPE_PRICE_GROWTH
+    : plan === "PRO"
+      ? process.env.STRIPE_PRICE_PRO
+      : null
+
+  if (!priceId) {
+    return NextResponse.json({ error: "Invalid plan" }, { status: 400 })
   }
 
   // Get or create Stripe customer
@@ -39,6 +60,20 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  // If already subscribed, switch the plan via subscription update
+  if (business.stripeSubscriptionId) {
+    const subscription = await getStripe().subscriptions.retrieve(business.stripeSubscriptionId)
+    await getStripe().subscriptions.update(business.stripeSubscriptionId, {
+      items: [{
+        id: subscription.items.data[0].id,
+        price: priceId,
+      }],
+      proration_behavior: "create_prorations",
+    })
+    return NextResponse.json({ success: true })
+  }
+
+  // New subscription via checkout
   const checkoutSession = await getStripe().checkout.sessions.create({
     customer: customerId,
     mode: "subscription",

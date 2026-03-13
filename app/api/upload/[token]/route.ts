@@ -21,7 +21,13 @@ export async function GET(
 
   const hire = await db.hire.findUnique({
     where: { uploadToken: token },
-    include: {
+    select: {
+      employeeName: true,
+      position: true,
+      status: true,
+      completionPct: true,
+      tokenExpiresAt: true,
+      requiredDocTypes: true,
       business: { select: { name: true, brandLogoUrl: true, brandPrimaryColor: true, brandAccentColor: true } },
       documents: {
         select: {
@@ -47,12 +53,17 @@ export async function GET(
     )
   }
 
+  const requiredDocTypes = Array.isArray(hire.requiredDocTypes) && (hire.requiredDocTypes as string[]).length > 0
+    ? hire.requiredDocTypes as string[]
+    : null
+
   return Response.json({
     employeeName: hire.employeeName,
     businessName: hire.business.name,
     position: hire.position,
     status: hire.status,
     completionPct: hire.completionPct,
+    requiredDocTypes,
     brandLogoUrl: hire.business.brandLogoUrl ?? null,
     brandPrimaryColor: hire.business.brandPrimaryColor ?? null,
     brandAccentColor: hire.business.brandAccentColor ?? null,
@@ -192,8 +203,12 @@ export async function POST(
     select: { docType: true, currentVersionId: true },
   })
 
+  const hireRequired = Array.isArray(hire.requiredDocTypes) && (hire.requiredDocTypes as string[]).length > 0
+    ? hire.requiredDocTypes as string[]
+    : undefined
   const completionPct = calculateCompletionPct(
-    allDocs.filter((d) => d.currentVersionId !== null).map((d) => d.docType)
+    allDocs.filter((d) => d.currentVersionId !== null).map((d) => d.docType),
+    hireRequired
   )
   const isComplete = completionPct === 100
 

@@ -2,6 +2,8 @@ import { NextRequest } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getResend } from "@/lib/resend"
+import { DEFAULT_TEMPLATES } from "@/lib/default-templates"
+import type { WorkflowType } from "@/lib/generated/prisma/client"
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -46,8 +48,8 @@ export async function POST(req: NextRequest) {
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     include: {
-      ownedBusiness: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true } },
-      business: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true } },
+      ownedBusiness: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true, workflowType: true } },
+      business: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true, workflowType: true } },
     },
   })
   const business = user?.ownedBusiness ?? user?.business
@@ -97,6 +99,15 @@ export async function POST(req: NextRequest) {
     existingHires.map(h => h.employeeEmail?.toLowerCase()).filter(Boolean)
   )
 
+  // Get default doc types for this business's workflow (once, outside loop)
+  const defaultTemplate = await db.roleTemplate.findFirst({
+    where: { businessId: business.id },
+    select: { docTypes: true },
+  })
+  const requiredDocTypes = defaultTemplate && Array.isArray(defaultTemplate.docTypes) && (defaultTemplate.docTypes as string[]).length > 0
+    ? defaultTemplate.docTypes as string[]
+    : DEFAULT_TEMPLATES[business.workflowType as WorkflowType].docTypes
+
   for (let i = 1; i < lines.length; i++) {
     const cols = parseCSVLine(lines[i])
     const name = cols[nameIdx]
@@ -128,6 +139,7 @@ export async function POST(req: NextRequest) {
           employeeEmail: email,
           employeePhone: phone || null,
           position: position || null,
+          requiredDocTypes,
         },
       })
 

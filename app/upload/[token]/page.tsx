@@ -16,7 +16,7 @@ import {
   Eye,
   Calendar,
 } from "lucide-react"
-import { DOCUMENT_TYPES, REQUIRED_DOC_TYPES } from "@/lib/documents"
+import { DOCUMENT_TYPES } from "@/lib/documents"
 import { getFormDefinition } from "@/lib/forms"
 import { FormFillFlow } from "@/components/upload/form-fill-flow"
 import { getValidationTips } from "@/lib/document-validation-tips"
@@ -33,6 +33,7 @@ type HireData = {
   position: string | null
   status: string
   completionPct: number
+  requiredDocTypes: string[] | null
   brandLogoUrl: string | null
   brandPrimaryColor: string | null
   brandAccentColor: string | null
@@ -237,7 +238,7 @@ export default function UploadPage() {
             <div className="mt-8 w-full max-w-sm">
               <ProgressBar pct={100} />
               <p className="text-sm text-muted-foreground mt-2">
-                4 of 4 documents complete
+                All documents complete
               </p>
             </div>
           </div>
@@ -249,7 +250,8 @@ export default function UploadPage() {
   // Ready — main upload view
   const { data } = state
   const uploadedTypes = new Set(data.documents.map((d) => d.docType))
-  const uploadedCount = REQUIRED_DOC_TYPES.filter((t) =>
+  const requiredDocs = data.requiredDocTypes ?? ["W4", "I9", "DIRECT_DEPOSIT", "OFFER_LETTER"]
+  const uploadedCount = requiredDocs.filter((t) =>
     uploadedTypes.has(t)
   ).length
 
@@ -295,7 +297,7 @@ export default function UploadPage() {
             <div className="mb-8 px-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-foreground">
-                  {uploadedCount} of {REQUIRED_DOC_TYPES.length} documents
+                  {uploadedCount} of {requiredDocs.length} documents
                 </span>
                 <span className="text-sm font-medium" style={{ color: 'var(--brand-primary)' }}>
                   {data.completionPct}%
@@ -314,8 +316,9 @@ export default function UploadPage() {
 
             {/* Document cards */}
             <div className="space-y-4">
-              {REQUIRED_DOC_TYPES.map((docType) => {
-                const doc = DOCUMENT_TYPES[docType]
+              {requiredDocs.map((docType) => {
+                const doc = DOCUMENT_TYPES[docType as keyof typeof DOCUMENT_TYPES]
+                if (!doc) return null
                 const uploaded = data.documents.find((d) => d.docType === docType)
                 const isUploading = uploadingDoc === docType
                 const wasJustUploaded = justUploaded === docType

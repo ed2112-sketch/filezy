@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { checkHireLimit } from "@/lib/plans"
+import { DEFAULT_TEMPLATES } from "@/lib/default-templates"
+import type { WorkflowType } from "@/lib/generated/prisma/client"
 
 export async function GET() {
   const session = await auth()
@@ -23,6 +25,31 @@ export async function GET() {
   })
 
   return NextResponse.json(hires)
+}
+
+async function getRequiredDocTypes(businessId: string, workflowType: WorkflowType, roleTemplateId?: string): Promise<string[]> {
+  // If a specific role template is provided, use its doc types
+  if (roleTemplateId) {
+    const template = await db.roleTemplate.findUnique({
+      where: { id: roleTemplateId },
+      select: { docTypes: true },
+    })
+    if (template && Array.isArray(template.docTypes)) {
+      return template.docTypes as string[]
+    }
+  }
+
+  // Otherwise find the first template for this business
+  const defaultTemplate = await db.roleTemplate.findFirst({
+    where: { businessId },
+    select: { docTypes: true },
+  })
+  if (defaultTemplate && Array.isArray(defaultTemplate.docTypes) && (defaultTemplate.docTypes as string[]).length > 0) {
+    return defaultTemplate.docTypes as string[]
+  }
+
+  // Fall back to the hardcoded default for this workflow type
+  return DEFAULT_TEMPLATES[workflowType].docTypes
 }
 
 export async function POST(request: NextRequest) {
@@ -51,7 +78,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { employeeName, employeeEmail, employeePhone, position, startDate } =
+  const { employeeName, employeeEmail, employeePhone, position, startDate, roleTemplateId } =
     body
 
   if (!employeeName || typeof employeeName !== "string") {
@@ -61,6 +88,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const requiredDocTypes = await getRequiredDocTypes(business.id, business.workflowType, roleTemplateId)
+
   const hire = await db.hire.create({
     data: {
       businessId: business.id,
@@ -69,6 +98,8 @@ export async function POST(request: NextRequest) {
       employeePhone: employeePhone?.trim() || null,
       position: position?.trim() || null,
       startDate: startDate ? new Date(startDate) : null,
+      roleTemplateId: roleTemplateId || null,
+      requiredDocTypes,
     },
   })
 

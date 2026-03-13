@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import { getStripe } from "@/lib/stripe"
 import { db } from "@/lib/db"
 import { calculateCommission } from "@/lib/commission"
+import { PLAN_LIMITS } from "@/lib/plans"
 import type { Plan } from "@/lib/generated/prisma/client"
 import Stripe from "stripe"
 
 function getPriceToPlan(): Record<string, Plan> {
   return {
-    [process.env.STRIPE_PRICE_STARTER || ""]: "STARTER",
     [process.env.STRIPE_PRICE_GROWTH || ""]: "GROWTH",
     [process.env.STRIPE_PRICE_PRO || ""]: "PRO",
   }
@@ -122,12 +122,68 @@ export async function POST(request: NextRequest) {
         const plan = priceId ? getPriceToPlan()[priceId] : undefined
 
         if (plan) {
+          const item = subscription.items.data[0]
           await db.business.updateMany({
             where: { stripeCustomerId: customerId },
             data: {
               plan,
               stripeSubscriptionId: subscription.id,
+              currentPeriodStart: item ? new Date(item.current_period_start * 1000) : undefined,
+              currentPeriodEnd: item ? new Date(item.current_period_end * 1000) : undefined,
             },
+          })
+        }
+        break
+      }
+
+      case "invoice.created": {
+        // Add overage line items before invoice is finalized
+        const invoice = event.data.object as Stripe.Invoice
+        if (invoice.status !== "draft") break
+
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id
+        if (!customerId) break
+
+        const business = await db.business.findUnique({
+          where: { stripeCustomerId: customerId },
+        })
+        if (!business || business.plan === "STARTER") break
+
+        const limits = PLAN_LIMITS[business.plan]
+        const periodStart = business.currentPeriodStart ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        const periodEnd = business.currentPeriodEnd ?? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999)
+
+        // Count unbilled overage usage for the billing period
+        const unbilledUsage = await db.onboardingUsage.findMany({
+          where: {
+            businessId: business.id,
+            completedAt: { gte: periodStart, lte: periodEnd },
+            chargedCents: { not: null },
+            stripeUsageId: null,
+          },
+        })
+
+        if (unbilledUsage.length === 0) break
+
+        const totalOverageCents = unbilledUsage.reduce((sum, u) => sum + (u.chargedCents ?? 0), 0)
+
+        if (totalOverageCents > 0) {
+          // Add overage as a line item on the draft invoice
+          const invoiceItem = await getStripe().invoiceItems.create({
+            customer: customerId,
+            invoice: invoice.id,
+            amount: totalOverageCents,
+            currency: "usd",
+            description: `Overage: ${unbilledUsage.length} onboarding${unbilledUsage.length === 1 ? "" : "s"} at $${(limits.overagePriceCents / 100).toFixed(2)}/each (beyond ${limits.includedOnboardings} included)`,
+          })
+
+          // Mark usage records as billed
+          await db.onboardingUsage.updateMany({
+            where: { id: { in: unbilledUsage.map((u) => u.id) } },
+            data: { stripeUsageId: invoiceItem.id },
           })
         }
         break

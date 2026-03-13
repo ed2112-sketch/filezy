@@ -113,6 +113,7 @@ model Hire {
   employeePhone           String?
   position                String?
   startDate               DateTime?
+  requiredDocTypes        Json       @default("[]")
   uploadToken             String     @unique @default(cuid())
   tokenExpiresAt          DateTime   @default(dbgenerated("NOW() + INTERVAL '30 days'"))
   status                  HireStatus @default(PENDING)
