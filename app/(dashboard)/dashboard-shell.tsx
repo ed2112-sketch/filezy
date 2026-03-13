@@ -20,10 +20,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const navLinks = [
+const allNavLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/hires", label: "Hires", icon: Users },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings, ownerAdminOnly: true },
 ]
 
 export function DashboardShell({
@@ -31,13 +31,19 @@ export function DashboardShell({
   userName,
   userEmail,
   userImage,
+  user,
 }: {
   children: React.ReactNode
   userName: string
   userEmail: string
   userImage?: string
+  user?: { name?: string | null; email?: string | null; image?: string | null; role?: string }
 }) {
   const pathname = usePathname()
+  const role = user?.role ?? "OWNER"
+  const navLinks = allNavLinks.filter(
+    (link) => !link.ownerAdminOnly || role !== "VIEWER"
+  )
 
   const initials = userName
     .split(" ")
@@ -106,11 +112,15 @@ export function DashboardShell({
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => window.location.href = "/settings"}>
-                <Settings className="h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {role !== "VIEWER" && (
+                <>
+                  <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => window.location.href = "/settings"}>
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem
                 className="gap-2 cursor-pointer text-destructive"
                 onClick={() => {
