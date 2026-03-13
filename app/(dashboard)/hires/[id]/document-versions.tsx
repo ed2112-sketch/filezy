@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { DOCUMENT_TYPES } from "@/lib/documents"
 
 type DocumentVersion = {
   id: string
@@ -165,7 +166,7 @@ export function DocumentVersionHistory({
                     {statusCfg.label}
                   </Badge>
                   <a
-                    href={`/api/documents/${document.id}/download`}
+                    href={`/api/documents/${document.id}/versions/${v.id}/download`}
                     title="Download this version"
                     className="text-[#136334] hover:text-[#136334]/80 transition-colors"
                   >
@@ -247,7 +248,9 @@ export function PendingApprovalsCard({
       </p>
       <ul className="list-disc list-inside text-xs text-amber-800 space-y-0.5">
         {docsWithPending.map((d) => (
-          <li key={d.id}>{d.docType}</li>
+          <li key={d.id}>
+            {DOCUMENT_TYPES[d.docType as keyof typeof DOCUMENT_TYPES]?.label ?? d.docType}
+          </li>
         ))}
       </ul>
     </div>
