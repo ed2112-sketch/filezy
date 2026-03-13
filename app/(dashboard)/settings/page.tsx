@@ -107,7 +107,8 @@ export default function SettingsPage() {
   const planLabels: Record<string, string> = {
     FREE: "Free",
     STARTER: "Starter",
-    GROWTH: "Growth",
+    PRO: "Pro",
+    BUSINESS: "Business",
   }
 
   return (
@@ -234,14 +235,14 @@ export default function SettingsPage() {
                     10 hires per year
                   </span>
                 )}
-                {form.plan === "GROWTH" && (
+                {(form.plan === "PRO" || form.plan === "BUSINESS") && (
                   <span className="text-sm text-muted-foreground">
                     Unlimited hires
                   </span>
                 )}
               </div>
             </div>
-            {form.plan !== "GROWTH" && (
+            {form.plan !== "PRO" && form.plan !== "BUSINESS" && (
               <Button variant="outline" className="gap-2">
                 <CreditCard className="h-4 w-4" />
                 Upgrade

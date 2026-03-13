@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge"
 const planLabels: Record<string, string> = {
   FREE: "Free",
   STARTER: "Starter",
-  GROWTH: "Growth",
+  PRO: "Pro",
+  BUSINESS: "Business",
 }
 
 export default async function AccountantClientsPage() {

@@ -8,7 +8,8 @@ import Stripe from "stripe"
 function getPriceToPlan(): Record<string, Plan> {
   return {
     [process.env.STRIPE_PRICE_STARTER || ""]: "STARTER",
-    [process.env.STRIPE_PRICE_GROWTH || ""]: "GROWTH",
+    [process.env.STRIPE_PRICE_PRO || ""]: "PRO",
+    [process.env.STRIPE_PRICE_BUSINESS || ""]: "BUSINESS",
   }
 }
 
