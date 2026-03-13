@@ -65,8 +65,10 @@ function formatDate(date: string | Date): string {
 
 export function DocumentVersionHistory({
   document,
+  canApprove = false,
 }: {
   document: DocumentWithVersions
+  canApprove?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
   const [loadingAction, setLoadingAction] = useState<
@@ -177,7 +179,7 @@ export function DocumentVersionHistory({
             )
           })}
 
-          {pendingVersion && (
+          {pendingVersion && canApprove && (
             <div className="flex items-center gap-2 pt-1">
               <Button
                 size="sm"

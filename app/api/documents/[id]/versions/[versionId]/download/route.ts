@@ -14,30 +14,36 @@ export async function GET(
 
   const { id, versionId } = await params
 
-  const version = await db.documentVersion.findUnique({
-    where: { id: versionId },
+  // Enforce documentId at the DB layer to prevent IDOR
+  const version = await db.documentVersion.findFirst({
+    where: { id: versionId, documentId: id },
     include: {
       document: {
         include: {
           hire: {
-            include: {
-              business: { select: { ownerId: true } },
-            },
+            select: { businessId: true },
           },
         },
       },
     },
   })
 
-  if (!version || version.documentId !== id) {
+  if (!version) {
     return Response.json({ error: "Not found" }, { status: 404 })
   }
 
-  if (version.document.hire.business.ownerId !== session.user.id) {
+  // Verify user belongs to this business (owner or team member)
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: { ownedBusiness: true, business: true },
+  })
+
+  const userBusinessId = user?.ownedBusiness?.id ?? user?.business?.id
+  if (!userBusinessId || userBusinessId !== version.document.hire.businessId) {
     return Response.json({ error: "Forbidden" }, { status: 403 })
   }
 
   const url = await getSignedDownloadUrl(version.filePath, 3600)
 
-  return Response.json({ url })
+  return Response.redirect(url, 302)
 }

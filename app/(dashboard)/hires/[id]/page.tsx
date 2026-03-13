@@ -101,6 +101,13 @@ export default async function HireDetailPage({
     },
   ]
 
+  // Check if current user can approve (OWNER or ADMIN, not VIEWER)
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+  const canApprove = user?.role === "OWNER" || user?.role === "ADMIN"
+
   // Serialize documents for client components (dates -> strings)
   const serializedDocuments = hire.documents.map((doc) => ({
     id: doc.id,
@@ -325,7 +332,7 @@ export default async function HireDetailPage({
 
                   {/* Version history expandable section */}
                   {serialized && serialized.versions.length > 0 && (
-                    <DocumentVersionHistory document={serialized} />
+                    <DocumentVersionHistory document={serialized} canApprove={canApprove} />
                   )}
                 </div>
               )

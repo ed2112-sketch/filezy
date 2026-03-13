@@ -41,5 +41,5 @@ export async function GET(
 
   const url = await getSignedDownloadUrl(document.currentVersion.filePath, 3600)
 
-  return Response.json({ url })
+  return Response.redirect(url, 302)
 }
