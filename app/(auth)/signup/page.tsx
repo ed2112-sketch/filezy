@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { FileText, Briefcase, Calculator, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,14 @@ const WORKFLOW_OPTIONS: {
 ]
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#136334]" /></div>}>
+      <SignupContent />
+    </Suspense>
+  )
+}
+
+function SignupContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<1 | 2>(1)
