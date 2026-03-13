@@ -33,6 +33,9 @@ type HireData = {
   position: string | null
   status: string
   completionPct: number
+  brandLogoUrl: string | null
+  brandPrimaryColor: string | null
+  brandAccentColor: string | null
   documents: DocStatus[]
 }
 
@@ -205,27 +208,38 @@ export default function UploadPage() {
 
   // Complete
   if (state.kind === "complete") {
+    const { data } = state
     return (
-      <Shell>
-        <div className="flex flex-col items-center text-center py-12 px-4">
-          <div className="rounded-full bg-primary/10 p-6 mb-6">
-            <PartyPopper className="h-12 w-12 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            You're all set!
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-sm">
-            All your documents have been submitted.{" "}
-            <span className="font-medium text-foreground">
-              {state.data.businessName}
-            </span>{" "}
-            has been notified.
-          </p>
-          <div className="mt-8 w-full max-w-sm">
-            <ProgressBar pct={100} />
-            <p className="text-sm text-muted-foreground mt-2">
-              4 of 4 documents complete
+      <Shell brandLogoUrl={data.brandLogoUrl} businessName={data.businessName}>
+        <div
+          style={{
+            '--brand-primary': data.brandPrimaryColor || '#136334',
+            '--brand-accent': data.brandAccentColor || '#36c973',
+          } as React.CSSProperties}
+        >
+          <div className="flex flex-col items-center text-center py-12 px-4">
+            <div className="rounded-full bg-primary/10 p-6 mb-6">
+              <PartyPopper
+                className="h-12 w-12"
+                style={{ color: 'var(--brand-primary)' }}
+              />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              You're all set!
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-sm">
+              All your documents have been submitted.{" "}
+              <span className="font-medium text-foreground">
+                {data.businessName}
+              </span>{" "}
+              has been notified.
             </p>
+            <div className="mt-8 w-full max-w-sm">
+              <ProgressBar pct={100} />
+              <p className="text-sm text-muted-foreground mt-2">
+                4 of 4 documents complete
+              </p>
+            </div>
           </div>
         </div>
       </Shell>
@@ -240,110 +254,135 @@ export default function UploadPage() {
   ).length
 
   return (
-    <Shell>
-      {activeFormFill ? (
-        <FormFillFlow
-          docType={activeFormFill}
-          token={token}
-          employeeName={data.employeeName}
-          onComplete={() => {
-            setActiveFormFill(null)
-            fetchHire()
-          }}
-          onCancel={() => setActiveFormFill(null)}
-        />
-      ) : (
-        <>
-          {/* Header */}
-          <div className="px-1 mb-8">
-            <p className="text-sm font-medium text-primary mb-1">
-              {data.businessName}
-            </p>
-            <h1 className="text-2xl font-bold text-foreground">
-              Welcome, {data.employeeName}
-            </h1>
-            {data.position && (
-              <p className="text-muted-foreground mt-1">{data.position}</p>
+    <Shell brandLogoUrl={data.brandLogoUrl} businessName={data.businessName}>
+      <div
+        style={{
+          '--brand-primary': data.brandPrimaryColor || '#136334',
+          '--brand-accent': data.brandAccentColor || '#36c973',
+        } as React.CSSProperties}
+      >
+        {activeFormFill ? (
+          <FormFillFlow
+            docType={activeFormFill}
+            token={token}
+            employeeName={data.employeeName}
+            onComplete={() => {
+              setActiveFormFill(null)
+              fetchHire()
+            }}
+            onCancel={() => setActiveFormFill(null)}
+          />
+        ) : (
+          <>
+            {/* Header */}
+            <div className="px-1 mb-8">
+              <p className="text-sm font-medium mb-1" style={{ color: 'var(--brand-primary)' }}>
+                {data.businessName}
+              </p>
+              <h1 className="text-2xl font-bold text-foreground">
+                Welcome, {data.employeeName}
+              </h1>
+              {data.position && (
+                <p className="text-muted-foreground mt-1">{data.position}</p>
+              )}
+              <p className="text-muted-foreground mt-3 text-[15px] leading-relaxed">
+                Please upload the following documents to complete your new hire
+                paperwork. You can take a photo or choose a file from your device.
+              </p>
+            </div>
+
+            {/* Progress */}
+            <div className="mb-8 px-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-foreground">
+                  {uploadedCount} of {REQUIRED_DOC_TYPES.length} documents
+                </span>
+                <span className="text-sm font-medium" style={{ color: 'var(--brand-primary)' }}>
+                  {data.completionPct}%
+                </span>
+              </div>
+              <ProgressBar pct={data.completionPct} />
+            </div>
+
+            {/* Upload error */}
+            {uploadError && (
+              <div className="mb-6 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-sm text-destructive">{uploadError}</p>
+              </div>
             )}
-            <p className="text-muted-foreground mt-3 text-[15px] leading-relaxed">
-              Please upload the following documents to complete your new hire
-              paperwork. You can take a photo or choose a file from your device.
+
+            {/* Document cards */}
+            <div className="space-y-4">
+              {REQUIRED_DOC_TYPES.map((docType) => {
+                const doc = DOCUMENT_TYPES[docType]
+                const uploaded = data.documents.find((d) => d.docType === docType)
+                const isUploading = uploadingDoc === docType
+                const wasJustUploaded = justUploaded === docType
+                const hasFormDefinition = !!getFormDefinition(docType)
+
+                return (
+                  <DocumentCard
+                    key={docType}
+                    docType={docType}
+                    label={doc.label}
+                    description={doc.description}
+                    instructions={doc.instructions}
+                    uploaded={!!uploaded}
+                    uploadedFileName={uploaded?.fileName ?? undefined}
+                    isUploading={isUploading}
+                    wasJustUploaded={wasJustUploaded}
+                    hasFormDefinition={hasFormDefinition}
+                    onFileSelect={(file) => handleUpload(docType, file)}
+                    onFillOnline={() => setActiveFormFill(docType)}
+                  />
+                )
+              })}
+            </div>
+
+            {/* Footer note */}
+            <p className="text-center text-xs text-muted-foreground mt-10 mb-6 px-4">
+              Your documents are encrypted and sent directly to {data.businessName}.
+              <br />
+              Powered by Filezy
             </p>
-          </div>
-
-          {/* Progress */}
-          <div className="mb-8 px-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-foreground">
-                {uploadedCount} of {REQUIRED_DOC_TYPES.length} documents
-              </span>
-              <span className="text-sm font-medium text-primary">
-                {data.completionPct}%
-              </span>
-            </div>
-            <ProgressBar pct={data.completionPct} />
-          </div>
-
-          {/* Upload error */}
-          {uploadError && (
-            <div className="mb-6 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <p className="text-sm text-destructive">{uploadError}</p>
-            </div>
-          )}
-
-          {/* Document cards */}
-          <div className="space-y-4">
-            {REQUIRED_DOC_TYPES.map((docType) => {
-              const doc = DOCUMENT_TYPES[docType]
-              const uploaded = data.documents.find((d) => d.docType === docType)
-              const isUploading = uploadingDoc === docType
-              const wasJustUploaded = justUploaded === docType
-              const hasFormDefinition = !!getFormDefinition(docType)
-
-              return (
-                <DocumentCard
-                  key={docType}
-                  docType={docType}
-                  label={doc.label}
-                  description={doc.description}
-                  instructions={doc.instructions}
-                  uploaded={!!uploaded}
-                  uploadedFileName={uploaded?.fileName ?? undefined}
-                  isUploading={isUploading}
-                  wasJustUploaded={wasJustUploaded}
-                  hasFormDefinition={hasFormDefinition}
-                  onFileSelect={(file) => handleUpload(docType, file)}
-                  onFillOnline={() => setActiveFormFill(docType)}
-                />
-              )
-            })}
-          </div>
-
-          {/* Footer note */}
-          <p className="text-center text-xs text-muted-foreground mt-10 mb-6 px-4">
-            Your documents are encrypted and sent directly to {data.businessName}.
-            <br />
-            Powered by Filezy
-          </p>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </Shell>
   )
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  brandLogoUrl,
+  businessName,
+}: {
+  children: React.ReactNode
+  brandLogoUrl?: string | null
+  businessName?: string | null
+}) {
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <header className="sticky top-0 z-10 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <FileText className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-lg text-foreground tracking-tight">
-            Filezy
-          </span>
+          {brandLogoUrl ? (
+            <img
+              src={brandLogoUrl}
+              alt={businessName ?? ""}
+              className="h-10 max-w-[200px] object-contain"
+            />
+          ) : (
+            <>
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                <FileText className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-lg text-foreground tracking-tight">
+                Filezy
+              </span>
+            </>
+          )}
         </div>
       </header>
 
@@ -356,8 +395,8 @@ function ProgressBar({ pct }: { pct: number }) {
   return (
     <div className="h-2.5 w-full rounded-full bg-secondary overflow-hidden">
       <div
-        className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
-        style={{ width: `${pct}%` }}
+        className="h-full rounded-full transition-all duration-700 ease-out"
+        style={{ width: `${pct}%`, backgroundColor: 'var(--brand-primary, #136334)' }}
       />
     </div>
   )
@@ -424,7 +463,10 @@ function DocumentCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {uploaded ? (
-              <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+              <CheckCircle2
+                className="h-5 w-5 shrink-0"
+                style={{ color: 'var(--brand-primary, #136334)' }}
+              />
             ) : (
               <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
             )}
@@ -458,7 +500,7 @@ function DocumentCard({
       )}
 
       {uploaded && uploadedFileName && (
-        <div className="mt-3 ml-7 flex items-center gap-2 text-sm text-primary">
+        <div className="mt-3 ml-7 flex items-center gap-2 text-sm" style={{ color: 'var(--brand-primary, #136334)' }}>
           <FileText className="h-4 w-4" />
           <span className="truncate">{uploadedFileName}</span>
         </div>
@@ -495,7 +537,8 @@ function DocumentCard({
             <button
               type="button"
               onClick={onFillOnline}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-all"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer active:scale-[0.98] transition-all"
+              style={{ backgroundColor: 'var(--brand-primary, #136334)' }}
             >
               <PenLine className="h-4 w-4" />
               Fill out online
@@ -523,7 +566,8 @@ function DocumentCard({
         ) : (
           <label
             htmlFor={inputId}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-all"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white cursor-pointer active:scale-[0.98] transition-all"
+            style={{ backgroundColor: 'var(--brand-primary, #136334)' }}
           >
             <Camera className="h-4 w-4" />
             Take photo or choose file

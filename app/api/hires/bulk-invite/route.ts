@@ -11,7 +11,10 @@ export async function POST(req: NextRequest) {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    include: { ownedBusiness: true, business: true },
+    include: {
+      ownedBusiness: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true } },
+      business: { select: { id: true, name: true, accountantEmail: true, brandLogoUrl: true } },
+    },
   })
   const business = user?.ownedBusiness ?? user?.business
   if (!business) {
@@ -99,11 +102,14 @@ export async function POST(req: NextRequest) {
       results.created++
 
       // Send invite email (fire and forget)
+      const logoHtml = business.brandLogoUrl
+        ? `<img src="${business.brandLogoUrl}" alt="${business.name}" style="max-height: 40px; max-width: 200px; object-fit: contain;" />`
+        : `<strong>${business.name}</strong>`
       getResend().emails.send({
         from: `${business.name} via Filezy <noreply@filezy.com>`,
         to: email,
         subject: `${business.name} — Document upload request`,
-        html: `<p>Hi ${name},</p><p>${business.name} has requested documents from you. Please use the link below to upload them.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}">Upload your documents</a></p><p>If you have questions, contact ${business.name} directly.</p>`,
+        html: `<div style="margin-bottom: 16px;">${logoHtml}</div><p>Hi ${name},</p><p>${business.name} has requested documents from you. Please use the link below to upload them.</p><p><a href="${process.env.NEXT_PUBLIC_APP_URL}/upload/${hire.uploadToken}">Upload your documents</a></p><p>If you have questions, contact ${business.name} directly.</p>`,
       }).catch(err => console.error("Bulk invite email failed for", email, err))
     } catch {
       results.failed.push({ row: i + 1, reason: "Failed to create record" })
