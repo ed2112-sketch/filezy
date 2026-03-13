@@ -8,7 +8,7 @@ nixPkgs = ["nodejs_22"]
 NIXPACKS_NODE_VERSION = "22"
 
 [deploy]
-startCommand = "npx prisma db push --skip-generate && npm run start"
+startCommand = "npx prisma db push && npm run start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
