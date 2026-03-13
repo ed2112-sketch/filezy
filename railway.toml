@@ -8,7 +8,7 @@ nixPkgs = ["nodejs_22"]
 NIXPACKS_NODE_VERSION = "22"
 
 [deploy]
-startCommand = "npm run start"
+startCommand = "npx prisma migrate deploy && npm run start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
