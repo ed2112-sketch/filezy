@@ -110,9 +110,9 @@ function Hero() {
           </div>
 
           <h1 className="text-[3.25rem] md:text-[4.25rem] font-bold leading-[1.05] tracking-tight mb-6">
-            Stop chasing onboarding{" "}
+            Stop Chasing Onboarding{" "}
             <span className="relative inline-block">
-              <span className="relative z-10">paperwork.</span>
+              <span className="relative z-10">Paperwork</span>
               <span className="absolute bottom-0 left-0 right-0 h-4 bg-[#36c973]/20 -z-0 rounded-sm" />
             </span>
           </h1>
