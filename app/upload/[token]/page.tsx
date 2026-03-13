@@ -10,8 +10,11 @@ import {
   AlertCircle,
   Loader2,
   PartyPopper,
+  PenLine,
 } from "lucide-react"
 import { DOCUMENT_TYPES, REQUIRED_DOC_TYPES } from "@/lib/documents"
+import { getFormDefinition } from "@/lib/forms"
+import { FormFillFlow } from "@/components/upload/form-fill-flow"
 
 type DocStatus = {
   docType: string
@@ -44,6 +47,7 @@ export default function UploadPage() {
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [justUploaded, setJustUploaded] = useState<string | null>(null)
+  const [activeFormFill, setActiveFormFill] = useState<string | null>(null)
 
   const fetchHire = useCallback(async () => {
     try {
@@ -232,75 +236,93 @@ export default function UploadPage() {
 
   return (
     <Shell>
-      {/* Header */}
-      <div className="px-1 mb-8">
-        <p className="text-sm font-medium text-primary mb-1">
-          {data.businessName}
-        </p>
-        <h1 className="text-2xl font-bold text-foreground">
-          Welcome, {data.employeeName}
-        </h1>
-        {data.position && (
-          <p className="text-muted-foreground mt-1">{data.position}</p>
-        )}
-        <p className="text-muted-foreground mt-3 text-[15px] leading-relaxed">
-          Please upload the following documents to complete your new hire
-          paperwork. You can take a photo or choose a file from your device.
-        </p>
-      </div>
+      {activeFormFill ? (
+        <FormFillFlow
+          docType={activeFormFill}
+          token={token}
+          employeeName={data.employeeName}
+          onComplete={() => {
+            setActiveFormFill(null)
+            fetchHire()
+          }}
+          onCancel={() => setActiveFormFill(null)}
+        />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="px-1 mb-8">
+            <p className="text-sm font-medium text-primary mb-1">
+              {data.businessName}
+            </p>
+            <h1 className="text-2xl font-bold text-foreground">
+              Welcome, {data.employeeName}
+            </h1>
+            {data.position && (
+              <p className="text-muted-foreground mt-1">{data.position}</p>
+            )}
+            <p className="text-muted-foreground mt-3 text-[15px] leading-relaxed">
+              Please upload the following documents to complete your new hire
+              paperwork. You can take a photo or choose a file from your device.
+            </p>
+          </div>
 
-      {/* Progress */}
-      <div className="mb-8 px-1">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-foreground">
-            {uploadedCount} of {REQUIRED_DOC_TYPES.length} documents
-          </span>
-          <span className="text-sm font-medium text-primary">
-            {data.completionPct}%
-          </span>
-        </div>
-        <ProgressBar pct={data.completionPct} />
-      </div>
+          {/* Progress */}
+          <div className="mb-8 px-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-foreground">
+                {uploadedCount} of {REQUIRED_DOC_TYPES.length} documents
+              </span>
+              <span className="text-sm font-medium text-primary">
+                {data.completionPct}%
+              </span>
+            </div>
+            <ProgressBar pct={data.completionPct} />
+          </div>
 
-      {/* Upload error */}
-      {uploadError && (
-        <div className="mb-6 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-          <p className="text-sm text-destructive">{uploadError}</p>
-        </div>
+          {/* Upload error */}
+          {uploadError && (
+            <div className="mb-6 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-3 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">{uploadError}</p>
+            </div>
+          )}
+
+          {/* Document cards */}
+          <div className="space-y-4">
+            {REQUIRED_DOC_TYPES.map((docType) => {
+              const doc = DOCUMENT_TYPES[docType]
+              const uploaded = data.documents.find((d) => d.docType === docType)
+              const isUploading = uploadingDoc === docType
+              const wasJustUploaded = justUploaded === docType
+              const hasFormDefinition = !!getFormDefinition(docType)
+
+              return (
+                <DocumentCard
+                  key={docType}
+                  docType={docType}
+                  label={doc.label}
+                  description={doc.description}
+                  instructions={doc.instructions}
+                  uploaded={!!uploaded}
+                  uploadedFileName={uploaded?.fileName ?? undefined}
+                  isUploading={isUploading}
+                  wasJustUploaded={wasJustUploaded}
+                  hasFormDefinition={hasFormDefinition}
+                  onFileSelect={(file) => handleUpload(docType, file)}
+                  onFillOnline={() => setActiveFormFill(docType)}
+                />
+              )
+            })}
+          </div>
+
+          {/* Footer note */}
+          <p className="text-center text-xs text-muted-foreground mt-10 mb-6 px-4">
+            Your documents are encrypted and sent directly to {data.businessName}.
+            <br />
+            Powered by Filezy
+          </p>
+        </>
       )}
-
-      {/* Document cards */}
-      <div className="space-y-4">
-        {REQUIRED_DOC_TYPES.map((docType) => {
-          const doc = DOCUMENT_TYPES[docType]
-          const uploaded = data.documents.find((d) => d.docType === docType)
-          const isUploading = uploadingDoc === docType
-          const wasJustUploaded = justUploaded === docType
-
-          return (
-            <DocumentCard
-              key={docType}
-              docType={docType}
-              label={doc.label}
-              description={doc.description}
-              instructions={doc.instructions}
-              uploaded={!!uploaded}
-              uploadedFileName={uploaded?.fileName ?? undefined}
-              isUploading={isUploading}
-              wasJustUploaded={wasJustUploaded}
-              onFileSelect={(file) => handleUpload(docType, file)}
-            />
-          )
-        })}
-      </div>
-
-      {/* Footer note */}
-      <p className="text-center text-xs text-muted-foreground mt-10 mb-6 px-4">
-        Your documents are encrypted and sent directly to {data.businessName}.
-        <br />
-        Powered by Filezy
-      </p>
     </Shell>
   )
 }
@@ -363,7 +385,9 @@ function DocumentCard({
   uploadedFileName,
   isUploading,
   wasJustUploaded,
+  hasFormDefinition,
   onFileSelect,
+  onFillOnline,
 }: {
   docType: string
   label: string
@@ -373,7 +397,9 @@ function DocumentCard({
   uploadedFileName?: string
   isUploading: boolean
   wasJustUploaded: boolean
+  hasFormDefinition: boolean
   onFileSelect: (file: File) => void
+  onFillOnline: () => void
 }) {
   const inputId = `file-${docType}`
 
@@ -439,6 +465,36 @@ function DocumentCard({
           <div className="inline-flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary">
             <Loader2 className="h-4 w-4 animate-spin" />
             Uploading...
+          </div>
+        ) : hasFormDefinition ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={onFillOnline}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground cursor-pointer hover:bg-primary/90 active:scale-[0.98] transition-all"
+            >
+              <PenLine className="h-4 w-4" />
+              Fill out online
+            </button>
+            <label
+              htmlFor={inputId}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground cursor-pointer hover:bg-accent active:scale-[0.98] transition-all"
+            >
+              <Camera className="h-4 w-4" />
+              Upload file instead
+              <input
+                id={inputId}
+                type="file"
+                accept="image/*,application/pdf"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) onFileSelect(file)
+                  e.target.value = ""
+                }}
+              />
+            </label>
           </div>
         ) : (
           <label
